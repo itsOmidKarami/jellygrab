@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+30nama_cookies.json
+*_cookies.json
+media/
+jellyfin/config/
+jellyfin/cache/
+.DS_Store
+
+# .NET build artifacts
+bin/
+obj/
+*.user
+
+# Editor
+.idea/
+.vscode/

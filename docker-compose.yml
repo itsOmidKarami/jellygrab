@@ -1,0 +1,44 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    ports:
+      - "8096:8096"
+    volumes:
+      - ./jellyfin/config:/config
+      - ./jellyfin/cache:/cache
+      - ${HOST_MEDIA_DIR:-./media}:/media
+      # JellyNama plugin DLL is copied into ./jellyfin/config/plugins/JellyNama_0.1.0/
+      # by ./install-plugin.sh and picked up via the /config bind-mount above.
+    networks:
+      - jellynama-net
+
+  jellynama:
+    build:
+      context: .
+      dockerfile: sidecar/Dockerfile
+    container_name: jellynama
+    restart: unless-stopped
+    depends_on:
+      - jellyfin
+    ports:
+      - "${SIDECAR_PORT:-8765}:8765"
+    environment:
+      JELLYFIN_URL: ${JELLYFIN_URL:-http://jellyfin:8096}
+      JELLYFIN_API_KEY: ${JELLYFIN_API_KEY}
+      JELLYFIN_USER_ID: ${JELLYFIN_USER_ID}
+      DOWNLOAD_DIR: ${DOWNLOAD_DIR:-/media/downloads}
+      NAMA_BASE_URL: ${NAMA_BASE_URL:-https://30nama.com}
+      NAMA_COOKIE: ${NAMA_COOKIE}
+      NAMA_COOKIES_FILE: ${NAMA_COOKIES_FILE:-/secrets/30nama_cookies.json}
+      NAMA_USER_AGENT: ${NAMA_USER_AGENT}
+    volumes:
+      - ${HOST_MEDIA_DIR:-./media}:/media
+      - ./30nama_cookies.json:/secrets/30nama_cookies.json:ro
+    networks:
+      - jellynama-net
+
+networks:
+  jellynama-net:
+    driver: bridge
