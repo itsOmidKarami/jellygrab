@@ -20,5 +20,6 @@
     <EmbeddedResource Include="Configuration\configPage.html" />
     <EmbeddedResource Include="Web\jellynama.html" />
     <EmbeddedResource Include="Web\jellynama.js" />
+    <EmbeddedResource Include="Web\inject.js" />
   </ItemGroup>
 </Project>

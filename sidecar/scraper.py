@@ -23,6 +23,7 @@ class DownloadOption:
     size: str | None = None
     resolution: str | None = None
     encoder: str | None = None
+    tags: list[str] | None = None
 
 
 @dataclass
@@ -171,10 +172,10 @@ async def get_download_options(detail_url: str) -> list[DownloadOption]:
 
 
 _FA_LABELS = {
-    "quality": "کیفیت",
-    "size": "حجم",
-    "resolution": "رزولوشن",
-    "encoder": "انکودر",
+    "کیفیت": "quality",
+    "حجم": "size",
+    "رزولوشن": "resolution",
+    "انکودر": "encoder",
 }
 
 
@@ -184,15 +185,18 @@ def _parse_download_options(html: str) -> list[DownloadOption]:
     soup = BeautifulSoup(html, "lxml")
     options: list[DownloadOption] = []
     seen: set[str] = set()
-    for section in soup.select("section.download-info"):
-        link = section.select_one('a[href$=".mkv"], a[href$=".mp4"], a[href*=".mkv?"], a[href*=".mp4?"]')
+    # Each download row is a `section.download-bar` containing one `.download-info`
+    # (metadata + tags) and one direct video link as a sibling.
+    rows = soup.select("section.download-bar") or soup.select("section.download-info")
+    for row in rows:
+        link = row.select_one('a[href$=".mkv"], a[href$=".mp4"], a[href*=".mkv?"], a[href*=".mp4?"]')
         if not link:
             continue
         href = link.get("href", "")
         if not href or href in seen:
             continue
         seen.add(href)
-        fields = _extract_labels(section.get_text(" ", strip=True))
+        fields = _extract_long_info(row)
         options.append(
             DownloadOption(
                 quality=fields.get("quality") or _quality_from_url(href),
@@ -200,6 +204,7 @@ def _parse_download_options(html: str) -> list[DownloadOption]:
                 size=fields.get("size"),
                 resolution=fields.get("resolution"),
                 encoder=fields.get("encoder"),
+                tags=_extract_tags(row),
             )
         )
     if not options:
@@ -212,18 +217,28 @@ def _parse_download_options(html: str) -> list[DownloadOption]:
     return options
 
 
-def _extract_labels(text: str) -> dict[str, str]:
-    """Pull values out of Persian labels like 'کیفیت: x265 BluRay 2160p حجم: 66.25 GB ...'."""
+def _extract_long_info(row) -> dict[str, str]:
+    """Read label/value pairs from `.long-info-bar > li`, each `<li>` has two `<p>`."""
     out: dict[str, str] = {}
-    keys = list(_FA_LABELS.values())
-    pattern = re.compile(rf"({'|'.join(map(re.escape, keys))})\s*[:：]\s*(.*?)(?=(?:{'|'.join(map(re.escape, keys))})\s*[:：]|$)")
-    for m in pattern.finditer(text):
-        label, value = m.group(1), m.group(2).strip()
-        for key, fa in _FA_LABELS.items():
-            if label == fa:
-                out[key] = value
-                break
+    for li in row.select(".long-info-bar > li"):
+        ps = li.find_all("p")
+        if len(ps) < 2:
+            continue
+        label = ps[0].get_text(" ", strip=True).rstrip(":：").strip()
+        value = ps[1].get_text(" ", strip=True)
+        key = _FA_LABELS.get(label)
+        if key and value:
+            out[key] = value
     return out
+
+
+def _extract_tags(row) -> list[str] | None:
+    tags: list[str] = []
+    for li in row.select(".tag-content ul > li, .tag-content li"):
+        text = li.get_text(" ", strip=True)
+        if text and text not in tags:
+            tags.append(text)
+    return tags or None
 
 
 def _quality_from_url(url: str) -> str:
