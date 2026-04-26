@@ -231,7 +231,7 @@
         '<div style="padding:10px;display:flex;flex-direction:column;gap:6px;">' +
           '<div style="font-weight:600;font-size:13px;">' + escapeHtml(h.title) + '</div>' +
           '<div style="font-size:11px;color:#8a98a8;">' + (h.year ? escapeHtml(h.year) + ' · ' : '') + escapeHtml(h.kind || "") + ' ' + inLib + '</div>' +
-          '<div class="jn-opts" data-detail="' + encodeURIComponent(h.detail_url) + '" data-title="' + encodeURIComponent(h.title) + '">' +
+          '<div class="jn-opts" data-detail="' + encodeURIComponent(h.detail_url) + '" data-title="' + encodeURIComponent(h.title) + '" data-kind="' + encodeURIComponent(h.kind || "") + '" data-year="' + encodeURIComponent(h.year || "") + '">' +
             '<button is="emby-button" type="button" class="raised jn-load-opts" style="font-size:12px;padding:6px 10px;"><span>Load options</span></button>' +
           '</div>' +
         '</div>';
@@ -264,6 +264,8 @@
   function loadOptions(modal, container) {
     const detail = decodeURIComponent(container.dataset.detail);
     const title = decodeURIComponent(container.dataset.title);
+    const kind = decodeURIComponent(container.dataset.kind || "");
+    const year = decodeURIComponent(container.dataset.year || "");
     container.innerHTML = '<span style="font-size:11px;color:#8a98a8;">Loading…</span>';
     api("/api/options?detail_url=" + encodeURIComponent(detail))
       .then((opts) => {
@@ -282,7 +284,7 @@
           b.className = "raised";
           b.style.cssText = "font-size:11px;padding:4px 8px;align-self:flex-start;";
           b.textContent = [o.quality, o.size, o.encoder].filter(Boolean).join(" · ");
-          b.addEventListener("click", () => startDownload(modal, title, o.url, b));
+          b.addEventListener("click", () => startDownload(modal, title, o.url, b, kind, year));
           row.appendChild(b);
 
           if (o.tags && o.tags.length) {
@@ -305,10 +307,10 @@
       });
   }
 
-  function startDownload(modal, title, url, btn) {
+  function startDownload(modal, title, url, btn, kind, year) {
     btn.disabled = true;
     btn.textContent = "Queued…";
-    api("/api/download", { method: "POST", body: JSON.stringify({ title, url }) })
+    api("/api/download", { method: "POST", body: JSON.stringify({ title, url, kind: kind || "unknown", year: year || null }) })
       .then(() => { btn.textContent = "Queued ✓"; refreshJobs(modal); })
       .catch((e) => { btn.disabled = false; btn.textContent = "Retry"; showError(modal, e.message); });
   }

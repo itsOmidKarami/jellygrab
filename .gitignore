@@ -4,6 +4,7 @@ __pycache__/
 .env
 30nama_cookies.json
 *_cookies.json
+secrets/
 media/
 jellyfin/config/
 jellyfin/cache/

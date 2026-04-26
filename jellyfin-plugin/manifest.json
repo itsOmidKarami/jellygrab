@@ -10,7 +10,7 @@
       {
         "version": "0.1.0.0",
         "changelog": "Initial release.",
-        "targetAbi": "10.10.0.0",
+        "targetAbi": "10.11.0.0",
         "sourceUrl": "https://example.com/jellynama_0.1.0.0.zip",
         "checksum": "REPLACE_WITH_MD5_OF_ZIP",
         "timestamp": "2026-04-26T00:00:00Z"

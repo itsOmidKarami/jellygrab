@@ -1,0 +1,59 @@
+name: Build plugin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "jellyfin-plugin/**"
+      - ".github/workflows/build-plugin.yml"
+  pull_request:
+    paths:
+      - "jellyfin-plugin/**"
+      - ".github/workflows/build-plugin.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Jellyfin ${{ matrix.jellyfin }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Add a row here when supporting a new Jellyfin minor.
+        # `dotnet` must match the .NET runtime Jellyfin ships with for that version.
+        include:
+          - jellyfin: "10.11.8"
+            dotnet: "9.0.x"
+            target_abi: "10.11.0.0"
+    defaults:
+      run:
+        working-directory: jellyfin-plugin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet }}
+
+      - name: Restore
+        run: dotnet restore -p:JellyfinVersion=${{ matrix.jellyfin }}
+
+      - name: Build
+        run: dotnet build -c Release --no-restore -p:JellyfinVersion=${{ matrix.jellyfin }}
+
+      - name: Publish
+        run: dotnet publish -c Release --no-build -p:JellyfinVersion=${{ matrix.jellyfin }} -o publish
+
+      - name: Verify DLL produced
+        run: test -f publish/Jellyfin.Plugin.JellyNama.dll
+
+      - name: Package
+        run: |
+          cd publish
+          zip -j "../jellynama-jellyfin-${{ matrix.jellyfin }}.zip" Jellyfin.Plugin.JellyNama.dll
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jellynama-jellyfin-${{ matrix.jellyfin }}
+          path: jellyfin-plugin/jellynama-jellyfin-${{ matrix.jellyfin }}.zip
+          if-no-files-found: error

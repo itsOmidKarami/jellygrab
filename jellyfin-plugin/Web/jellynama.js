@@ -73,7 +73,7 @@
             <span class="badge kind">${hit.kind}</span>
             ${hit.in_library ? `<span class="badge in-lib">In library</span>` : ""}
           </div>
-          <div class="options" data-detail="${encodeURIComponent(hit.detail_url)}" data-title="${encodeURIComponent(hit.title)}">
+          <div class="options" data-detail="${encodeURIComponent(hit.detail_url)}" data-title="${encodeURIComponent(hit.title)}" data-kind="${encodeURIComponent(hit.kind || "")}" data-year="${encodeURIComponent(hit.year || "")}">
             <button class="secondary load-options">Load download options</button>
           </div>
         </div>
@@ -88,6 +88,8 @@
   async function loadOptions(container) {
     const detailUrl = decodeURIComponent(container.dataset.detail);
     const title = decodeURIComponent(container.dataset.title);
+    const kind = decodeURIComponent(container.dataset.kind || "");
+    const year = decodeURIComponent(container.dataset.year || "");
     container.innerHTML = `<span class="job-detail">Loading…</span>`;
     try {
       const options = await api(`/api/options?detail_url=${encodeURIComponent(detailUrl)}`);
@@ -99,7 +101,7 @@
       for (const opt of options) {
         const b = document.createElement("button");
         b.textContent = `${opt.quality}${opt.size ? ` · ${opt.size}` : ""}`;
-        b.addEventListener("click", () => startDownload(title, opt.url, b));
+        b.addEventListener("click", () => startDownload(title, opt.url, b, kind, year));
         container.appendChild(b);
       }
     } catch (e) {
@@ -107,13 +109,13 @@
     }
   }
 
-  async function startDownload(title, url, btn) {
+  async function startDownload(title, url, btn, kind, year) {
     btn.disabled = true;
     btn.textContent = "Queued…";
     try {
       await api(`/api/download`, {
         method: "POST",
-        body: JSON.stringify({ title, url }),
+        body: JSON.stringify({ title, url, kind: kind || "unknown", year: year || null }),
       });
       btn.textContent = "Queued ✓";
       refreshJobs();

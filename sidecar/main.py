@@ -16,8 +16,18 @@ from job_queue import queue
 from session_state import status as session_status
 
 
+def _ensure_cookies_file() -> None:
+    """Create an empty cookies JSON on first boot so users can populate it via the plugin UI."""
+    target = settings.nama_cookies_file
+    if not target or target.exists():
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("{}")
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    _ensure_cookies_file()
     await scraper.startup()
     keepalive_task = asyncio.create_task(keepalive.loop())
     try:
@@ -44,7 +54,8 @@ app.add_middleware(
 class DownloadRequest(BaseModel):
     title: str
     url: str
-    subdir: str = ""
+    kind: str = "unknown"
+    year: str | None = None
 
 
 class SearchHit(BaseModel):
@@ -91,7 +102,7 @@ async def api_options(detail_url: str) -> list[dict]:
 
 @app.post("/api/download")
 async def api_download(req: DownloadRequest) -> dict:
-    job_id = await downloader.enqueue(title=req.title, url=req.url, subdir=req.subdir)
+    job_id = await downloader.enqueue(title=req.title, url=req.url, kind=req.kind, year=req.year)
     return {"job_id": job_id}
 
 

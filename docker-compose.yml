@@ -29,6 +29,8 @@ services:
       JELLYFIN_API_KEY: ${JELLYFIN_API_KEY}
       JELLYFIN_USER_ID: ${JELLYFIN_USER_ID}
       DOWNLOAD_DIR: ${DOWNLOAD_DIR:-/media/downloads}
+      MOVIES_DIR: ${MOVIES_DIR:-/media/Movies}
+      TV_DIR: ${TV_DIR:-/media/TV Shows}
       NAMA_BASE_URL: ${NAMA_BASE_URL:-https://30nama.com}
       NAMA_COOKIE: ${NAMA_COOKIE}
       NAMA_COOKIES_FILE: ${NAMA_COOKIES_FILE:-/secrets/30nama_cookies.json}
@@ -36,7 +38,7 @@ services:
       KEEPALIVE_INTERVAL_SEC: ${KEEPALIVE_INTERVAL_SEC:-1800}
     volumes:
       - ${HOST_MEDIA_DIR:-./media}:/media
-      - ./30nama_cookies.json:/secrets/30nama_cookies.json
+      - ./secrets:/secrets
     networks:
       - jellynama-net
 

@@ -18,10 +18,36 @@ def _filename_from_url(url: str) -> str:
     return name or "download.bin"
 
 
-async def enqueue(title: str, url: str, subdir: str = "") -> str:
-    target_dir = settings.download_dir / subdir if subdir else settings.download_dir
-    target_dir.mkdir(parents=True, exist_ok=True)
-    target_path = target_dir / _filename_from_url(url)
+_FS_UNSAFE = '<>:"/\\|?*'
+
+
+def _sanitize_folder(name: str) -> str:
+    cleaned = "".join("_" if c in _FS_UNSAFE else c for c in name).strip(" .")
+    return cleaned or "Untitled"
+
+
+def _resolve_target(title: str, url: str, kind: str, year: str | None) -> Path:
+    """Pick the root by content kind and place the file under a per-item folder.
+
+    Why: Jellyfin uses folder paths as part of its matcher, so a flat
+    `/media/downloads/Foo.mkv` ends up tagged with the word "downloads". Routing
+    movies and series into their own roots — and giving each item its own
+    `Title (Year)/` folder — matches Jellyfin's expected layout.
+    """
+    if kind == "movie":
+        root = settings.movies_dir
+    elif kind == "series":
+        root = settings.tv_dir
+    else:
+        root = settings.download_dir
+
+    folder = _sanitize_folder(f"{title} ({year})" if year else title)
+    return root / folder / _filename_from_url(url)
+
+
+async def enqueue(title: str, url: str, kind: str = "unknown", year: str | None = None) -> str:
+    target_path = _resolve_target(title, url, kind, year)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
     job = await queue.create(title=title, url=url, target_path=str(target_path))
     asyncio.create_task(_run_download(job.id))
     return job.id

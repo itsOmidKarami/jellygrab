@@ -9,6 +9,8 @@ class Settings:
     jellyfin_api_key: str
     jellyfin_user_id: str
     download_dir: Path
+    movies_dir: Path
+    tv_dir: Path
     sidecar_host: str
     sidecar_port: int
     nama_base_url: str
@@ -25,6 +27,8 @@ def load_settings() -> Settings:
         jellyfin_api_key=os.getenv("JELLYFIN_API_KEY", ""),
         jellyfin_user_id=os.getenv("JELLYFIN_USER_ID", ""),
         download_dir=Path(os.getenv("DOWNLOAD_DIR", "/media/downloads")),
+        movies_dir=Path(os.getenv("MOVIES_DIR", "/media/Movies")),
+        tv_dir=Path(os.getenv("TV_DIR", "/media/TV Shows")),
         sidecar_host=os.getenv("SIDECAR_HOST", "0.0.0.0"),
         sidecar_port=int(os.getenv("SIDECAR_PORT", "8765")),
         nama_base_url=os.getenv("NAMA_BASE_URL", "https://30nama.com").rstrip("/"),
