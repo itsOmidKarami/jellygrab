@@ -16,6 +16,7 @@ class Settings:
     nama_cookies_file: Path | None
     nama_user_agent: str
     plugin_dir: Path
+    keepalive_interval_sec: int
 
 
 def load_settings() -> Settings:
@@ -35,6 +36,7 @@ def load_settings() -> Settings:
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
         ),
         plugin_dir=Path(os.getenv("PLUGIN_DIR", "/app/jellyfin-plugin")),
+        keepalive_interval_sec=int(os.getenv("KEEPALIVE_INTERVAL_SEC", "1800")),
     )
 
 

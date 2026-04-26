@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -6,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import downloader
+import keepalive
 import scraper
 from config import settings
 from jellyfin_client import jellyfin
@@ -15,9 +17,15 @@ from job_queue import queue
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await scraper.startup()
+    keepalive_task = asyncio.create_task(keepalive.loop())
     try:
         yield
     finally:
+        keepalive_task.cancel()
+        try:
+            await keepalive_task
+        except asyncio.CancelledError:
+            pass
         await scraper.shutdown()
 
 

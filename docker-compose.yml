@@ -33,6 +33,7 @@ services:
       NAMA_COOKIE: ${NAMA_COOKIE}
       NAMA_COOKIES_FILE: ${NAMA_COOKIES_FILE:-/secrets/30nama_cookies.json}
       NAMA_USER_AGENT: ${NAMA_USER_AGENT}
+      KEEPALIVE_INTERVAL_SEC: ${KEEPALIVE_INTERVAL_SEC:-1800}
     volumes:
       - ${HOST_MEDIA_DIR:-./media}:/media
       - ./30nama_cookies.json:/secrets/30nama_cookies.json:ro
