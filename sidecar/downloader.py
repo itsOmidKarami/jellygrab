@@ -26,6 +26,11 @@ def _sanitize_folder(name: str) -> str:
     return cleaned or "Untitled"
 
 
+def _series_folder(title: str, year: str | None) -> Path:
+    folder = _sanitize_folder(f"{title} ({year})" if year else title)
+    return settings.tv_dir / folder
+
+
 def _resolve_target(title: str, url: str, kind: str, year: str | None) -> Path:
     """Pick the root by content kind and place the file under a per-item folder.
 
@@ -51,6 +56,46 @@ async def enqueue(title: str, url: str, kind: str = "unknown", year: str | None 
     job = await queue.create(title=title, url=url, target_path=str(target_path))
     asyncio.create_task(_run_download(job.id))
     return job.id
+
+
+def _season_int(season: str | int | None) -> int | None:
+    try:
+        return int(str(season).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+async def enqueue_series_pack(
+    title: str,
+    year: str | None,
+    season: str | int | None,
+    episodes: list[dict],
+) -> list[str]:
+    """Fan out one job per episode into `<tv>/<Title (Year)>/Season XX/<file>.mkv`.
+
+    Files keep their original 30nama basename (which already encodes SxxExx),
+    so Jellyfin's matcher slots them into the right episode without renaming.
+    """
+    season_n = _season_int(season)
+    season_dir_name = f"Season {season_n:02d}" if season_n is not None else "Season Unknown"
+    base = _series_folder(title, year) / season_dir_name
+    base.mkdir(parents=True, exist_ok=True)
+
+    job_ids: list[str] = []
+    for ep in episodes:
+        url = ep.get("url")
+        if not url:
+            continue
+        target = base / _filename_from_url(url)
+        ep_num = _season_int(ep.get("episode"))
+        if season_n is not None and ep_num is not None:
+            ep_title = f"{title} S{season_n:02d}E{ep_num:02d}"
+        else:
+            ep_title = f"{title} (S{season or '?'}E{ep.get('episode') or '?'})"
+        job = await queue.create(title=ep_title, url=url, target_path=str(target))
+        asyncio.create_task(_run_download(job.id))
+        job_ids.append(job.id)
+    return job_ids
 
 
 async def _run_download(job_id: str) -> None:

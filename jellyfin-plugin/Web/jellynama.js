@@ -100,12 +100,36 @@
       container.innerHTML = "";
       for (const opt of options) {
         const b = document.createElement("button");
-        b.textContent = `${opt.quality}${opt.size ? ` · ${opt.size}` : ""}`;
-        b.addEventListener("click", () => startDownload(title, opt.url, b, kind, year));
+        if (opt.episodes && opt.episodes.length) {
+          const seasonLabel = opt.season ? `S${String(opt.season).padStart(2, "0")}` : "Season ?";
+          b.textContent = `${seasonLabel} · ${opt.quality} · ${opt.episodes.length} ep${opt.size ? ` · ${opt.size} avg` : ""}`;
+          b.addEventListener("click", () => startSeriesPack(title, year, opt.season, opt.episodes, b));
+        } else {
+          b.textContent = `${opt.quality}${opt.size ? ` · ${opt.size}` : ""}`;
+          b.addEventListener("click", () => startDownload(title, opt.url, b, kind, year));
+        }
         container.appendChild(b);
       }
     } catch (e) {
       container.innerHTML = `<span class="job-detail">Failed: ${escapeHtml(e.message)}</span>`;
+    }
+  }
+
+  async function startSeriesPack(title, year, season, episodes, btn) {
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = `Queuing ${episodes.length}…`;
+    try {
+      const resp = await api(`/api/download/series-pack`, {
+        method: "POST",
+        body: JSON.stringify({ title, year: year || null, season: season || null, episodes }),
+      });
+      btn.textContent = `Queued ${resp.job_ids ? resp.job_ids.length : episodes.length} ✓`;
+      refreshJobs();
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = original;
+      showError(`Download failed: ${e.message}`);
     }
   }
 

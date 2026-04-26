@@ -106,6 +106,31 @@ async def api_download(req: DownloadRequest) -> dict:
     return {"job_id": job_id}
 
 
+class EpisodeRef(BaseModel):
+    episode: str | None = None
+    url: str
+
+
+class SeriesPackRequest(BaseModel):
+    title: str
+    year: str | None = None
+    season: str | None = None
+    episodes: list[EpisodeRef]
+
+
+@app.post("/api/download/series-pack")
+async def api_download_series_pack(req: SeriesPackRequest) -> dict:
+    if not req.episodes:
+        raise HTTPException(400, "episodes is required")
+    job_ids = await downloader.enqueue_series_pack(
+        title=req.title,
+        year=req.year,
+        season=req.season,
+        episodes=[ep.model_dump() for ep in req.episodes],
+    )
+    return {"job_ids": job_ids}
+
+
 @app.get("/api/status/{job_id}")
 async def api_status(job_id: str) -> dict:
     job = queue.get(job_id)

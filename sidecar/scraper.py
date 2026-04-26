@@ -1,10 +1,20 @@
 import asyncio
 import json
+import logging
 import re
 from dataclasses import dataclass, asdict
 from functools import lru_cache
+from pathlib import Path
 from typing import cast
 from urllib.parse import urljoin
+
+log = logging.getLogger("jellynama.scraper")
+log.setLevel(logging.INFO)
+if not log.handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    log.addHandler(_h)
+    log.propagate = False
 
 from playwright.async_api import (
     Browser,
@@ -24,6 +34,11 @@ class DownloadOption:
     resolution: str | None = None
     encoder: str | None = None
     tags: list[str] | None = None
+    # Series-only: when this option is a (season, quality) pack, `url` is empty
+    # and `episodes` lists each episode's direct .mkv URL. The downloader fans
+    # out one job per episode.
+    season: str | None = None
+    episodes: list[dict] | None = None
 
 
 @dataclass
@@ -141,7 +156,7 @@ async def search(query: str) -> list[SearchResult]:
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
         try:
             await page.wait_for_selector(
-                'article a[href*="/movie/"], article a[href*="/serie/"]',
+                'article a[href*="/movie/"], article a[href*="/movies/"], article a[href*="/serie/"], article a[href*="/series/"]',
                 timeout=15000,
             )
         except Exception:
@@ -161,7 +176,7 @@ def _parse_search(html: str, base: str) -> list[SearchResult]:
     soup = BeautifulSoup(html, "lxml")
     results: list[SearchResult] = []
     for art in soup.find_all("article"):
-        link = art.select_one('a[href*="/movie/"], a[href*="/serie/"]')
+        link = art.select_one('a[href*="/movie/"], a[href*="/movies/"], a[href*="/serie/"], a[href*="/series/"]')
         if not link:
             continue
         href = link.get("href", "")
@@ -172,7 +187,7 @@ def _parse_search(html: str, base: str) -> list[SearchResult]:
         title = _YEAR_SUFFIX.sub("", raw).strip() if year else raw
         img = art.select_one("img.main-cover") or art.select_one("img")
         poster = (img.get("src") or img.get("data-src")) if img else None
-        kind = "series" if "/serie" in href else "movie"
+        kind = "series" if ("/series/" in href or "/serie/" in href) else "movie"
         results.append(
             SearchResult(
                 title=title,
@@ -190,6 +205,8 @@ async def get_download_options(detail_url: str) -> list[DownloadOption]:
     if "section=download" not in detail_url:
         sep = "&" if "?" in detail_url else "?"
         detail_url = f"{detail_url}{sep}section=download"
+    if "/series/" in detail_url or "/serie/" in detail_url:
+        return await _get_series_packs(detail_url)
     ctx = await _new_context()
     try:
         page = await ctx.new_page()
@@ -205,6 +222,182 @@ async def get_download_options(detail_url: str) -> list[DownloadOption]:
         return _parse_download_options(html)
     finally:
         await ctx.close()
+
+
+_DEBUG_DIR = Path("/tmp/jellynama-debug")
+
+
+async def _navigate_through_cf(page, target_url: str) -> None:
+    """Visit homepage first, then the target — mimics click-through navigation
+    so Cloudflare treats the request as same-session and rarely challenges.
+
+    On direct navigation to a deep URL, CF often issues a JS challenge with
+    `__cf_chl_rt_tk=...` that headless Chromium can take 20s+ to clear (and
+    sometimes never does). Warming up via the homepage establishes the session
+    in a way CF's heuristics accept, so the second navigation lands directly.
+    """
+    try:
+        await page.goto(settings.nama_base_url, wait_until="domcontentloaded", timeout=20000)
+        # If we landed on a CF challenge, give its JS a moment to resolve.
+        if "__cf_chl_rt_tk" in page.url or "just a moment" in (await page.title()).lower():
+            try:
+                await page.wait_for_url(
+                    lambda u: "__cf_chl_rt_tk" not in u, timeout=15000
+                )
+            except Exception:
+                log.warning("series: homepage warm-up still on CF challenge: %s", page.url)
+    except Exception as exc:
+        log.warning("series: homepage warm-up failed: %s", exc)
+    await page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
+    if "__cf_chl_rt_tk" in page.url:
+        try:
+            await page.wait_for_url(
+                lambda u: "__cf_chl_rt_tk" not in u, timeout=20000
+            )
+        except Exception:
+            log.warning("series: target still on CF challenge after wait: %s", page.url)
+
+
+async def _get_series_packs(detail_url: str) -> list[DownloadOption]:
+    """Capture the series download API the SPA fires when a quality row is clicked.
+
+    The series detail page renders only metadata in `section.download-bar` rows;
+    real .mkv URLs come from `interface.30nama.com/api/v1/action/download/id/<id>`,
+    which the SPA fetches on click. We attach a response listener, navigate, click
+    the first row to trigger the call, then parse the JSON.
+    """
+    log.info("series: starting capture for %s", detail_url)
+    ctx = await _new_context()
+    try:
+        page = await ctx.new_page()
+        loop = asyncio.get_running_loop()
+        captured: asyncio.Future[dict] = loop.create_future()
+        api_urls_seen: list[str] = []
+
+        async def handle_response(resp) -> None:
+            url = resp.url
+            # Log any interface.30nama.com call so we can see if a different
+            # endpoint is being used than the one we're filtering on.
+            if "interface.30nama.com" in url or "/action/" in url:
+                api_urls_seen.append(f"{resp.status} {url}")
+                log.info("series: api response %s %s", resp.status, url)
+            if captured.done() or "/action/download/id/" not in url:
+                return
+            try:
+                body = await resp.json()
+                log.info("series: captured body keys=%s", list(body.keys()) if isinstance(body, dict) else type(body).__name__)
+                captured.set_result(body)
+            except Exception as exc:
+                log.warning("series: failed to parse body from %s: %s", url, exc)
+                if not captured.done():
+                    captured.set_exception(exc)
+
+        page.on("response", lambda r: asyncio.create_task(handle_response(r)))
+
+        await _navigate_through_cf(page, detail_url)
+        log.info("series: landed on %s", page.url)
+        try:
+            await page.wait_for_selector("section.download-bar", timeout=20000)
+        except Exception:
+            # If we hit a Cloudflare challenge, persist whatever new cookies the
+            # browser solved so the next request inherits them.
+            log.warning("series: section.download-bar not found within 20s; final url=%s", page.url)
+            await _dump_debug(page, "no-download-bar")
+            await persist_cookies(ctx)
+            return []
+        # Give Vue hydration a moment so the bars become interactive — without
+        # this the first click sometimes lands before the SPA wires its handler
+        # and the API call is never fired.
+        try:
+            await page.wait_for_load_state("networkidle", timeout=5000)
+        except Exception:
+            pass
+        # Click quality rows in sequence until one of them triggers the API call.
+        bars = await page.query_selector_all("section.download-bar")
+        log.info("series: found %d download-bar element(s)", len(bars))
+        for idx, bar in enumerate(bars[:5]):
+            try:
+                await bar.click(timeout=3000)
+                log.info("series: clicked bar #%d", idx)
+            except Exception as exc:
+                log.warning("series: click bar #%d failed: %s", idx, exc)
+                continue
+            try:
+                body = await asyncio.wait_for(asyncio.shield(captured), timeout=6.0)
+            except asyncio.TimeoutError:
+                log.info("series: bar #%d click did not trigger /action/download/id/ within 6s", idx)
+                continue
+            except Exception as exc:
+                log.warning("series: response capture errored: %s", exc)
+                return []
+            await persist_cookies(ctx)
+            options = _parse_series_packs(body)
+            log.info("series: parsed %d pack option(s)", len(options))
+            if not options:
+                await _dump_debug(page, "empty-packs", body=body)
+            return options
+        log.warning(
+            "series: exhausted %d bar(s) without capturing /action/download/id/. api urls seen=%s",
+            len(bars[:5]),
+            api_urls_seen,
+        )
+        await _dump_debug(page, "no-api-call")
+        return []
+    finally:
+        await ctx.close()
+
+
+async def _dump_debug(page, label: str, body: dict | None = None) -> None:
+    """Write the page HTML (and optional captured body) to /tmp for offline inspection."""
+    try:
+        _DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+        ts = re.sub(r"[^0-9]", "", str(asyncio.get_running_loop().time()))[:10]
+        html_path = _DEBUG_DIR / f"series-{label}-{ts}.html"
+        html_path.write_text(await page.content())
+        log.info("series: dumped page html to %s (url=%s)", html_path, page.url)
+        if body is not None:
+            (_DEBUG_DIR / f"series-{label}-{ts}.json").write_text(
+                json.dumps(body, indent=2, ensure_ascii=False)
+            )
+    except Exception as exc:
+        log.warning("series: debug dump failed: %s", exc)
+
+
+def _parse_series_packs(body: dict) -> list[DownloadOption]:
+    result = (body or {}).get("result") or {}
+    packs = result.get("download") or []
+    if packs:
+        first = packs[0]
+        log.info(
+            "series: pack[0] keys=%s scalar_sample=%s",
+            list(first.keys()),
+            {k: v for k, v in first.items() if not isinstance(v, (list, dict))},
+        )
+    options: list[DownloadOption] = []
+    for pack in packs:
+        links = pack.get("link") or []
+        episodes = [
+            {"episode": str(l.get("episode") or ""), "url": l["dl"]}
+            for l in links
+            if l.get("dl")
+        ]
+        if not episodes:
+            continue
+        season = pack.get("season") or pack.get("season_int")
+        season_str = str(season) if season is not None else None
+        tag_list = [t for t in (pack.get("note"), pack.get("tags")) if t]
+        options.append(
+            DownloadOption(
+                quality=pack.get("quality") or "unknown",
+                url="",
+                size=pack.get("size"),
+                encoder=pack.get("encoder"),
+                tags=tag_list or None,
+                season=season_str,
+                episodes=episodes,
+            )
+        )
+    return options
 
 
 _FA_LABELS = {
