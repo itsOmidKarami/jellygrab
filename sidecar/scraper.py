@@ -57,6 +57,42 @@ def cookie_jar() -> dict[str, str]:
     return dict(_cookie_jar())
 
 
+async def persist_cookies(ctx: BrowserContext) -> dict[str, str]:
+    """Snapshot the context's 30nama cookies back to NAMA_COOKIES_FILE.
+
+    Cloudflare may rotate `cf_clearance` (and the site itself rotates session
+    cookies) during normal navigation. Capturing them here means the next
+    request resumes with the live values instead of the stale on-disk copy.
+
+    Returns the merged jar that was written.
+    """
+    target = settings.nama_cookies_file
+    if not target:
+        return {}
+    raw = await ctx.cookies()
+    fresh = {
+        c["name"]: c["value"]
+        for c in raw
+        if "30nama.com" in c.get("domain", "")
+    }
+    if not fresh:
+        return {}
+    existing: dict[str, str] = {}
+    if target.exists():
+        try:
+            existing = json.loads(target.read_text())
+        except Exception:
+            existing = {}
+    merged = {**existing, **fresh}
+    if merged == existing:
+        return merged
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    tmp.write_text(json.dumps(merged, indent=2, ensure_ascii=False))
+    tmp.replace(target)
+    _cookie_jar.cache_clear()
+    return merged
+
+
 # Singleton browser — launched on first use, reused for the process lifetime.
 _lock = asyncio.Lock()
 _pw: Playwright | None = None

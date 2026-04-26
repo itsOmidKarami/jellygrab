@@ -12,7 +12,7 @@ import asyncio
 import logging
 
 from config import settings
-from scraper import _new_context
+from scraper import _new_context, persist_cookies
 
 log = logging.getLogger("jellynama.keepalive")
 log.setLevel(logging.INFO)
@@ -44,7 +44,12 @@ async def _ping_once() -> None:
                 status, title,
             )
         else:
-            log.info("keepalive: 30nama ping ok (status=%s, title=%r)", status, title[:60])
+            jar = await persist_cookies(ctx)
+            cf = jar.get("cf_clearance", "")
+            log.info(
+                "keepalive: 30nama ping ok (status=%s, cookies=%d, cf_clearance=%s)",
+                status, len(jar), (cf[:8] + "…") if cf else "absent",
+            )
     finally:
         await ctx.close()
 
