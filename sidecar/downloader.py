@@ -3,11 +3,12 @@ import time
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-import httpx
+from curl_cffi.requests import AsyncSession
 
 from config import settings
 from jellyfin_client import jellyfin
 from job_queue import queue
+from scraper import cookie_jar
 
 CHUNK_SIZE = 1024 * 256  # 256 KiB
 PROGRESS_THROTTLE_SEC = 0.5
@@ -107,10 +108,26 @@ async def _run_download(job_id: str) -> None:
 
     try:
         await queue.update(job_id, state="downloading")
-        headers = {"User-Agent": settings.nama_user_agent}
-        async with httpx.AsyncClient(follow_redirects=True, timeout=None, headers=headers) as client:
-            async with client.stream("GET", job.url) as resp:
-                resp.raise_for_status()
+        # curl_cffi impersonates Chrome's TLS/JA3 fingerprint so Cloudflare
+        # accepts the cookie jar issued to our headless Chromium session.
+        # Plain httpx gets bounced even with valid cf_clearance because its
+        # TLS handshake doesn't match the browser CF expects.
+        headers = {
+            "User-Agent": settings.nama_user_agent,
+            "Referer": settings.nama_base_url + "/",
+        }
+        async with AsyncSession(impersonate="chrome124") as session:
+            resp = await session.get(
+                job.url,
+                headers=headers,
+                cookies=cookie_jar(),
+                stream=True,
+                allow_redirects=True,
+                timeout=None,
+            )
+            try:
+                if resp.status_code >= 400:
+                    raise RuntimeError(f"HTTP {resp.status_code} fetching {job.url}")
                 total = int(resp.headers.get("Content-Length", 0)) or None
                 await queue.update(job_id, bytes_total=total)
 
@@ -118,7 +135,9 @@ async def _run_download(job_id: str) -> None:
                 last_update = 0.0
                 last_bytes = 0
                 with tmp.open("wb") as fh:
-                    async for chunk in resp.aiter_bytes(CHUNK_SIZE):
+                    async for chunk in resp.aiter_content(chunk_size=CHUNK_SIZE):
+                        if not chunk:
+                            continue
                         fh.write(chunk)
                         downloaded += len(chunk)
                         now = time.monotonic()
@@ -127,6 +146,8 @@ async def _run_download(job_id: str) -> None:
                             await queue.update(job_id, bytes_downloaded=downloaded, speed_bps=speed)
                             last_update = now
                             last_bytes = downloaded
+            finally:
+                await resp.aclose()
 
         tmp.replace(target)
         await queue.update(job_id, bytes_downloaded=downloaded, state="completed", speed_bps=0.0)
