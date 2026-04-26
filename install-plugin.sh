@@ -6,7 +6,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-SRC="jellyfin-plugin/bin/Release/net8.0/publish/Jellyfin.Plugin.JellyNama.dll"
+SRC="jellyfin-plugin/bin/Release/net9.0/publish/Jellyfin.Plugin.JellyNama.dll"
 DST_DIR="jellyfin/config/plugins/JellyNama_0.1.0"
 
 if [[ ! -f "$SRC" ]]; then
