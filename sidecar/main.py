@@ -1,4 +1,5 @@
 import asyncio
+import json
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -12,6 +13,7 @@ import scraper
 from config import settings
 from jellyfin_client import jellyfin
 from job_queue import queue
+from session_state import status as session_status
 
 
 @asynccontextmanager
@@ -104,6 +106,59 @@ async def api_status(job_id: str) -> dict:
 @app.get("/api/jobs")
 async def api_jobs() -> list[dict]:
     return [j.to_dict() for j in queue.list()]
+
+
+@app.get("/api/session-status")
+async def api_session_status() -> dict:
+    return session_status.to_dict()
+
+
+class CookieUpdate(BaseModel):
+    raw: str | None = None  # full Cookie: header value, e.g. "name=val; name2=val2"
+    jar: dict[str, str] | None = None  # alternative: a {name: value} object
+
+
+def _parse_cookie_header(raw: str) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for part in raw.split(";"):
+        part = part.strip()
+        if "=" in part:
+            k, v = part.split("=", 1)
+            k = k.strip()
+            if k:
+                out[k] = v.strip()
+    return out
+
+
+@app.post("/api/cookies")
+async def api_set_cookies(update: CookieUpdate) -> dict:
+    if not settings.nama_cookies_file:
+        raise HTTPException(400, "NAMA_COOKIES_FILE is not configured")
+
+    if update.jar:
+        jar = {str(k): str(v) for k, v in update.jar.items()}
+    elif update.raw:
+        jar = _parse_cookie_header(update.raw)
+    else:
+        raise HTTPException(400, "either 'raw' or 'jar' is required")
+    if not jar:
+        raise HTTPException(400, "no cookies parsed from input")
+
+    target = settings.nama_cookies_file
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(jar, indent=2, ensure_ascii=False))
+    scraper._cookie_jar.cache_clear()
+    return {"ok": True, "cookies": len(jar)}
+
+
+@app.post("/api/keepalive/run")
+async def api_keepalive_run() -> dict:
+    """Force a fresh keepalive ping right now (don't wait for the next interval)."""
+    try:
+        await keepalive._ping_once()
+    except Exception as exc:
+        return {"ok": False, "error": str(exc), "status": session_status.to_dict()}
+    return {"ok": True, "status": session_status.to_dict()}
 
 
 if settings.plugin_dir.exists():

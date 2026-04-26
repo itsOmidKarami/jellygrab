@@ -35,6 +35,34 @@
         </form>
 
         <div class="verticalSection" style="margin-top: 2em;">
+          <h3>30nama session</h3>
+          <div id="jnStatusPanel" style="background:#1a2027;border:1px solid #2a323d;border-radius:6px;padding:12px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+            <div style="flex:1;min-width:240px;">
+              <div id="jnStatusBadge" style="font-size:13px;font-weight:600;">Checking…</div>
+              <div id="jnStatusDetail" class="fieldDescription" style="margin-top:4px;font-size:12px;"></div>
+            </div>
+            <button is="emby-button" type="button" id="jnRefreshSession" class="raised">
+              <span>Refresh now</span>
+            </button>
+          </div>
+
+          <details style="margin-top:14px;">
+            <summary style="cursor:pointer;font-size:13px;color:#8a98a8;">Update 30nama cookies</summary>
+            <div class="fieldDescription" style="margin-top:8px;">
+              Open 30nama in your browser, log in, then DevTools → Application → Cookies → copy
+              the full <code>Cookie</code> header (e.g. <code>cf_clearance=...; clientSession=...</code>) and paste below.
+            </div>
+            <textarea id="jnCookieInput" rows="4"
+                      style="width:100%;margin-top:8px;background:#0e1216;color:#e8eef4;border:1px solid #2a323d;border-radius:4px;padding:8px;font-family:monospace;font-size:11px;"
+                      placeholder="cf_clearance=...; clientSession=..."></textarea>
+            <button is="emby-button" type="button" id="jnSaveCookies" class="raised" style="margin-top:8px;">
+              <span>Save cookies</span>
+            </button>
+            <div id="jnCookieMsg" class="fieldDescription" style="margin-top:6px;"></div>
+          </details>
+        </div>
+
+        <div class="verticalSection" style="margin-top: 2em;">
           <div class="searchRow flex" style="gap: 8px; margin-bottom: 1em;">
             <input is="emby-input" type="search" id="jnSearchQuery"
                    placeholder="Search 30nama for a movie or series..." style="flex:1;" />
@@ -175,21 +203,105 @@
           });
         }
 
+        function describeStatus(s) {
+          if (!s || s.last_check_at == null) {
+            return { color: "#8a98a8", label: "Never checked", detail: "Click Refresh now to test." };
+          }
+          const ageS = Math.max(0, Math.round(s.now - s.last_check_at));
+          const age = ageS < 60 ? `${ageS}s ago` : `${Math.round(ageS / 60)}m ago`;
+          if (s.healthy === false) {
+            return {
+              color: "#e53935",
+              label: "❌ Unhealthy",
+              detail: (s.note || s.error || "unknown") + " · checked " + age,
+            };
+          }
+          if (s.logged_in === true) {
+            return {
+              color: "#4caf50",
+              label: "✅ Logged in",
+              detail: `${s.cookies_count} cookies${s.cf_clearance_present ? " · cf_clearance ok" : " · no cf_clearance"} · checked ${age}`,
+            };
+          }
+          if (s.logged_in === false) {
+            return {
+              color: "#ffb300",
+              label: "⚠️ Anonymous (not logged in)",
+              detail: `Update cookies below. ${s.cookies_count} cookies present · checked ${age}`,
+            };
+          }
+          return {
+            color: "#4caf50",
+            label: "✅ Reachable",
+            detail: `${s.cookies_count} cookies · checked ${age}`,
+          };
+        }
+
+        function renderStatus(s) {
+          const view = describeStatus(s);
+          const badge = page.querySelector("#jnStatusBadge");
+          const detail = page.querySelector("#jnStatusDetail");
+          badge.textContent = view.label;
+          badge.style.color = view.color;
+          detail.textContent = view.detail;
+        }
+
+        function refreshSession() {
+          api("/api/session-status").then(renderStatus).catch(e => {
+            renderStatus(null);
+            page.querySelector("#jnStatusDetail").textContent = "Sidecar unreachable: " + e.message;
+          });
+        }
+
+        function forceSession() {
+          const btn = page.querySelector("#jnRefreshSession");
+          btn.disabled = true;
+          api("/api/keepalive/run", { method: "POST", body: "{}" })
+            .then(r => { renderStatus(r.status); })
+            .catch(e => {
+              page.querySelector("#jnStatusDetail").textContent = "Refresh failed: " + e.message;
+            })
+            .then(() => { btn.disabled = false; });
+        }
+
+        function saveCookies() {
+          const raw = page.querySelector("#jnCookieInput").value.trim();
+          const msg = page.querySelector("#jnCookieMsg");
+          if (!raw) { msg.textContent = "Paste a Cookie header value first."; msg.style.color = "#e53935"; return; }
+          msg.textContent = "Saving…"; msg.style.color = "#8a98a8";
+          api("/api/cookies", { method: "POST", body: JSON.stringify({ raw: raw }) })
+            .then(r => {
+              msg.textContent = `Saved ${r.cookies} cookies. Refreshing session…`;
+              msg.style.color = "#4caf50";
+              page.querySelector("#jnCookieInput").value = "";
+              forceSession();
+            })
+            .catch(e => { msg.textContent = "Save failed: " + e.message; msg.style.color = "#e53935"; });
+        }
+
         let jobsTimer = null;
+        let sessionTimer = null;
 
         page.addEventListener("viewshow", function () {
           ApiClient.getPluginConfiguration(PLUGIN_ID).then(cfg => {
             sidecarUrl = cfg.SidecarUrl || "http://localhost:8765";
             page.querySelector("#jnSidecarUrl").value = sidecarUrl;
             refreshJobs();
+            refreshSession();
             if (jobsTimer) clearInterval(jobsTimer);
+            if (sessionTimer) clearInterval(sessionTimer);
             jobsTimer = setInterval(refreshJobs, 2000);
+            sessionTimer = setInterval(refreshSession, 10000);
           });
         });
 
         page.addEventListener("viewhide", function () {
           if (jobsTimer) { clearInterval(jobsTimer); jobsTimer = null; }
+          if (sessionTimer) { clearInterval(sessionTimer); sessionTimer = null; }
         });
+
+        page.querySelector("#jnRefreshSession").addEventListener("click", forceSession);
+        page.querySelector("#jnSaveCookies").addEventListener("click", saveCookies);
 
         page.querySelector(".jellyNamaConfigForm").addEventListener("submit", function (e) {
           e.preventDefault();

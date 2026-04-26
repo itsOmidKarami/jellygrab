@@ -86,9 +86,9 @@ async def persist_cookies(ctx: BrowserContext) -> dict[str, str]:
     merged = {**existing, **fresh}
     if merged == existing:
         return merged
-    tmp = target.with_suffix(target.suffix + ".tmp")
-    tmp.write_text(json.dumps(merged, indent=2, ensure_ascii=False))
-    tmp.replace(target)
+    # Direct write (not rename-from-tmp): the cookies file is a single-file
+    # docker bind-mount and `os.replace` fails with EBUSY across that boundary.
+    target.write_text(json.dumps(merged, indent=2, ensure_ascii=False))
     _cookie_jar.cache_clear()
     return merged
 

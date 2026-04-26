@@ -9,10 +9,14 @@ operator knows to refresh `30nama_cookies.json`.
 """
 
 import asyncio
+import json
 import logging
+import time
+from urllib.parse import unquote
 
 from config import settings
 from scraper import _new_context, persist_cookies
+from session_state import status
 
 log = logging.getLogger("jellynama.keepalive")
 log.setLevel(logging.INFO)
@@ -23,33 +27,67 @@ if not log.handlers:
     log.propagate = False
 
 
+def _is_logged_in(jar: dict[str, str]) -> bool | None:
+    """30nama stores `clientSession` as URL-encoded JSON; logged-in users have a
+    non-empty `usertoken`. Returns None if the cookie isn't present at all."""
+    raw = jar.get("clientSession")
+    if not raw:
+        return None
+    try:
+        data = json.loads(unquote(raw))
+        return bool(data.get("usertoken"))
+    except Exception:
+        return None
+
+
 async def _ping_once() -> None:
     ctx = await _new_context()
     try:
         page = await ctx.new_page()
         resp = await page.goto(settings.nama_base_url, wait_until="domcontentloaded", timeout=20000)
-        status = resp.status if resp else 0
+        http_status = resp.status if resp else 0
         title = (await page.title()) or ""
         # Cloudflare's challenge-platform beacon is on every protected page, so we
         # detect the interstitial by stricter markers: HTTP 403, the literal
         # "Just a moment" page title, or an explicit challenge form.
         challenge = (
-            status == 403
+            http_status == 403
             or "just a moment" in title.lower()
             or await page.locator("form#challenge-form, #cf-please-wait").count() > 0
         )
-        if status >= 400 or challenge:
+        if http_status >= 400 or challenge:
+            status.last_check_at = time.time()
+            status.healthy = False
+            status.note = (
+                "Cloudflare challenge — refresh cookies"
+                if challenge
+                else f"HTTP {http_status}"
+            )
+            status.error = None
             log.warning(
                 "keepalive: 30nama ping unhealthy (status=%s, title=%r) — refresh cookies",
-                status, title,
+                http_status, title,
             )
-        else:
-            jar = await persist_cookies(ctx)
-            cf = jar.get("cf_clearance", "")
-            log.info(
-                "keepalive: 30nama ping ok (status=%s, cookies=%d, cf_clearance=%s)",
-                status, len(jar), (cf[:8] + "…") if cf else "absent",
-            )
+            return
+
+        jar = await persist_cookies(ctx)
+        logged_in = _is_logged_in(jar)
+        status.last_check_at = time.time()
+        status.healthy = True
+        status.logged_in = logged_in
+        status.cf_clearance_present = bool(jar.get("cf_clearance"))
+        status.cookies_count = len(jar)
+        status.error = None
+        status.note = (
+            "logged in" if logged_in
+            else "anonymous (no session)" if logged_in is False
+            else "ok"
+        )
+        cf = jar.get("cf_clearance", "")
+        log.info(
+            "keepalive: 30nama ping ok (status=%s, cookies=%d, cf_clearance=%s, logged_in=%s)",
+            http_status, len(jar), (cf[:8] + "…") if cf else "absent", logged_in,
+        )
     finally:
         await ctx.close()
 
@@ -67,6 +105,10 @@ async def loop() -> None:
             await _ping_once()
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as exc:
+            status.last_check_at = time.time()
+            status.healthy = False
+            status.error = str(exc)
+            status.note = "ping failed"
             log.exception("keepalive: ping failed")
         await asyncio.sleep(interval)
