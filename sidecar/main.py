@@ -184,6 +184,7 @@ async def api_set_cookies(update: CookieUpdate) -> dict:
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(jar, indent=2, ensure_ascii=False))
     scraper._cookie_jar.cache_clear()
+    await scraper.reseed_cookies()
     return {"ok": True, "cookies": len(jar)}
 
 

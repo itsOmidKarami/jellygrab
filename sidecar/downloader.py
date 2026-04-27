@@ -5,6 +5,7 @@ from urllib.parse import unquote, urlparse
 
 from curl_cffi.requests import AsyncSession
 
+import nama_session
 from config import settings
 from jellyfin_client import jellyfin
 from job_queue import queue
@@ -112,8 +113,10 @@ async def _run_download(job_id: str) -> None:
         # accepts the cookie jar issued to our headless Chromium session.
         # Plain httpx gets bounced even with valid cf_clearance because its
         # TLS handshake doesn't match the browser CF expects.
+        # Use the UA that FlareSolverr presented when it solved CF — cf_clearance
+        # is partly fingerprint-bound, so the download must replay the same UA.
         headers = {
-            "User-Agent": settings.nama_user_agent,
+            "User-Agent": nama_session.get_user_agent(),
             "Referer": settings.nama_base_url + "/",
         }
         async with AsyncSession(impersonate="chrome124") as session:

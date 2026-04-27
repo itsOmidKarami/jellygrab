@@ -19,9 +19,13 @@ class Settings:
     nama_user_agent: str
     plugin_dir: Path
     keepalive_interval_sec: int
+    flaresolverr_url: str
+    flaresolverr_session: str
+    flaresolverr_timeout_ms: int
 
 
 def load_settings() -> Settings:
+    cookies_file = Path(os.environ["NAMA_COOKIES_FILE"]) if os.getenv("NAMA_COOKIES_FILE") else None
     return Settings(
         jellyfin_url=os.getenv("JELLYFIN_URL", "http://jellyfin:8096").rstrip("/"),
         jellyfin_api_key=os.getenv("JELLYFIN_API_KEY", ""),
@@ -33,7 +37,7 @@ def load_settings() -> Settings:
         sidecar_port=int(os.getenv("SIDECAR_PORT", "8765")),
         nama_base_url=os.getenv("NAMA_BASE_URL", "https://30nama.com").rstrip("/"),
         nama_cookie=os.getenv("NAMA_COOKIE", ""),
-        nama_cookies_file=Path(os.environ["NAMA_COOKIES_FILE"]) if os.getenv("NAMA_COOKIES_FILE") else None,
+        nama_cookies_file=cookies_file,
         nama_user_agent=os.getenv(
             "NAMA_USER_AGENT",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -41,6 +45,9 @@ def load_settings() -> Settings:
         ),
         plugin_dir=Path(os.getenv("PLUGIN_DIR", "/app/jellyfin-plugin")),
         keepalive_interval_sec=int(os.getenv("KEEPALIVE_INTERVAL_SEC", "1800")),
+        flaresolverr_url=os.getenv("FLARESOLVERR_URL", "http://flaresolverr:8191").rstrip("/"),
+        flaresolverr_session=os.getenv("FLARESOLVERR_SESSION", "jellynama"),
+        flaresolverr_timeout_ms=int(os.getenv("FLARESOLVERR_TIMEOUT_MS", "60000")),
     )
 
 

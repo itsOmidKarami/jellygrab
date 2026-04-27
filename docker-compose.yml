@@ -14,6 +14,16 @@ services:
     networks:
       - jellynama-net
 
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: jellynama-flaresolverr
+    restart: unless-stopped
+    environment:
+      LOG_LEVEL: info
+      TZ: ${TZ:-UTC}
+    networks:
+      - jellynama-net
+
   jellynama:
     build:
       context: .
@@ -22,6 +32,7 @@ services:
     restart: unless-stopped
     depends_on:
       - jellyfin
+      - flaresolverr
     ports:
       - "${SIDECAR_PORT:-8765}:8765"
     environment:
@@ -36,6 +47,7 @@ services:
       NAMA_COOKIES_FILE: ${NAMA_COOKIES_FILE:-/secrets/30nama_cookies.json}
       NAMA_USER_AGENT: ${NAMA_USER_AGENT}
       KEEPALIVE_INTERVAL_SEC: ${KEEPALIVE_INTERVAL_SEC:-1800}
+      FLARESOLVERR_URL: ${FLARESOLVERR_URL:-http://flaresolverr:8191}
     volumes:
       - ${HOST_MEDIA_DIR:-./media}:/media
       - ./secrets:/secrets

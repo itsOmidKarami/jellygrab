@@ -13,7 +13,6 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock* ./
 RUN uv sync --frozen --no-dev || uv sync --no-dev
-RUN uv run playwright install --with-deps chromium
 
 COPY sidecar/ /app/sidecar/
 COPY jellyfin-plugin/ /app/jellyfin-plugin/
