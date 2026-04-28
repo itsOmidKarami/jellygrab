@@ -152,7 +152,10 @@
         '<div class="jn-modal-error" style="color:#e53935;font-size:13px;margin-bottom:8px;" hidden></div>' +
         '<div class="jn-modal-results" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;"></div>' +
         '<div style="margin-top:18px;">' +
-          '<h3 style="font-size:14px;margin:0 0 8px 0;color:#8a98a8;">Downloads</h3>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+            '<h3 style="font-size:14px;margin:0;color:#8a98a8;">Downloads</h3>' +
+            '<button is="emby-button" type="button" class="raised jn-modal-clear" style="font-size:11px;padding:4px 10px;"><span>Clear finished</span></button>' +
+          '</div>' +
           '<div class="jn-modal-jobs"></div>' +
         '</div>' +
       '</div>';
@@ -162,6 +165,14 @@
       if (e.target === modal) closeModal();
     });
     modal.querySelector(".jn-modal-close").addEventListener("click", closeModal);
+    modal.querySelector(".jn-modal-clear").addEventListener("click", (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      api("/api/jobs/clear", { method: "POST" })
+        .then(() => refreshJobs(modal))
+        .catch((err) => showError(modal, "Clear failed: " + err.message))
+        .finally(() => { btn.disabled = false; });
+    });
     modal.querySelector(".jn-modal-retry").addEventListener("click", () => {
       const q = modal.dataset.jnQuery;
       if (q) runSearch(modal, q);
@@ -210,14 +221,32 @@
     el.hidden = false;
   }
 
+  const PAGE_SIZE = 8;
+  let currentHits = [];
+  let currentPage = 0;
+
   function renderResults(modal, hits) {
+    currentHits = hits;
+    currentPage = 0;
+    renderPage(modal);
+  }
+
+  function renderPage(modal) {
     const root = modal.querySelector(".jn-modal-results");
-    if (!hits.length) {
+    const oldNav = modal.querySelector(".jn-pagination");
+    if (oldNav) oldNav.remove();
+
+    if (!currentHits.length) {
       root.innerHTML = '<div style="color:#8a98a8;padding:8px;">No results.</div>';
       return;
     }
+    const totalPages = Math.max(1, Math.ceil(currentHits.length / PAGE_SIZE));
+    if (currentPage >= totalPages) currentPage = totalPages - 1;
+    const start = currentPage * PAGE_SIZE;
+    const pageHits = currentHits.slice(start, start + PAGE_SIZE);
+
     root.innerHTML = "";
-    hits.forEach((h) => {
+    pageHits.forEach((h) => {
       const card = document.createElement("div");
       card.style.cssText = "background:#1a2027;border:1px solid #2a323d;border-radius:6px;overflow:hidden;display:flex;flex-direction:column;";
       const poster = h.poster
@@ -240,6 +269,35 @@
     root.querySelectorAll(".jn-load-opts").forEach((b) => {
       b.addEventListener("click", (e) => loadOptions(modal, e.currentTarget.parentElement));
     });
+    if (totalPages > 1) renderPagination(modal, totalPages);
+  }
+
+  function renderPagination(modal, totalPages) {
+    const nav = document.createElement("div");
+    nav.className = "jn-pagination";
+    nav.style.cssText = "display:flex;align-items:center;justify-content:center;gap:16px;margin-top:16px;";
+    const prev = document.createElement("button");
+    prev.setAttribute("is", "emby-button");
+    prev.type = "button";
+    prev.className = "raised";
+    prev.style.cssText = "font-size:12px;padding:6px 12px;";
+    prev.innerHTML = "<span>← Prev</span>";
+    prev.disabled = currentPage === 0;
+    prev.addEventListener("click", () => { currentPage--; renderPage(modal); });
+    const next = document.createElement("button");
+    next.setAttribute("is", "emby-button");
+    next.type = "button";
+    next.className = "raised";
+    next.style.cssText = "font-size:12px;padding:6px 12px;";
+    next.innerHTML = "<span>Next →</span>";
+    next.disabled = currentPage >= totalPages - 1;
+    next.addEventListener("click", () => { currentPage++; renderPage(modal); });
+    const label = document.createElement("span");
+    label.style.cssText = "color:#8a98a8;font-size:12px;";
+    label.textContent = "Page " + (currentPage + 1) + " of " + totalPages;
+    nav.append(prev, label, next);
+    const root = modal.querySelector(".jn-modal-results");
+    root.insertAdjacentElement("afterend", nav);
   }
 
   function renderEmpty(modal, container, message, color) {
@@ -274,32 +332,66 @@
           return;
         }
         container.innerHTML = "";
-        opts.forEach((o) => {
-          const row = document.createElement("div");
-          row.style.cssText = "display:flex;flex-direction:column;gap:4px;margin:4px 0;padding:6px;background:#0e1216;border:1px solid #232a33;border-radius:4px;";
+        const movieOpts = opts.filter((o) => !(o.episodes && o.episodes.length));
+        const seriesOpts = opts.filter((o) => o.episodes && o.episodes.length);
 
-          const b = document.createElement("button");
-          b.setAttribute("is", "emby-button");
-          b.type = "button";
-          b.className = "raised";
-          b.style.cssText = "font-size:11px;padding:4px 8px;align-self:flex-start;";
-          b.textContent = [o.quality, o.size, o.encoder].filter(Boolean).join(" · ");
-          b.addEventListener("click", () => startDownload(modal, title, o.url, b, kind, year));
-          row.appendChild(b);
+        const wrapper = document.createElement("details");
+        wrapper.open = true;
+        wrapper.style.cssText = "margin-top:4px;";
+        const wrapperSummary = document.createElement("summary");
+        wrapperSummary.style.cssText = "font-size:12px;font-weight:600;color:#e8eef5;padding:6px 8px;background:#232b34;border-radius:4px;cursor:pointer;list-style:none;user-select:none;";
+        const wrapperCaret = document.createElement("span");
+        wrapperCaret.textContent = "▸";
+        wrapperCaret.style.cssText = "display:inline-block;width:10px;margin-right:6px;transition:transform 0.15s ease;transform:rotate(90deg);";
+        wrapperSummary.appendChild(wrapperCaret);
+        wrapperSummary.appendChild(document.createTextNode("Download options · " + opts.length));
+        wrapper.addEventListener("toggle", () => {
+          wrapperCaret.style.transform = wrapper.open ? "rotate(90deg)" : "rotate(0deg)";
+        });
+        wrapper.appendChild(wrapperSummary);
+        const wrapperBody = document.createElement("div");
+        wrapperBody.style.cssText = "padding-top:6px;";
+        wrapper.appendChild(wrapperBody);
+        container.appendChild(wrapper);
 
-          if (o.tags && o.tags.length) {
-            const chips = document.createElement("div");
-            chips.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;";
-            o.tags.forEach((t) => {
-              const chip = document.createElement("span");
-              chip.textContent = t;
-              chip.style.cssText = "font-size:10px;padding:1px 6px;border-radius:999px;background:rgba(0,164,220,0.15);color:#7cd3f5;border:1px solid rgba(0,164,220,0.3);";
-              chips.appendChild(chip);
-            });
-            row.appendChild(chips);
-          }
+        movieOpts.forEach((o) => {
+          wrapperBody.appendChild(buildOptionRow(o, (btn) =>
+            startDownload(modal, title, o.url, btn, kind, year)
+          ));
+        });
 
-          container.appendChild(row);
+        const groups = new Map();
+        seriesOpts.forEach((o) => {
+          const k = o.season || "?";
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(o);
+        });
+        const keys = [...groups.keys()].sort((a, b) => Number(a) - Number(b));
+        keys.forEach((k, idx) => {
+          const details = document.createElement("details");
+          details.style.cssText = "margin-top:" + (idx === 0 ? "4px" : "8px") + ";border-top:" + (idx === 0 ? "none" : "1px solid #2a323d") + ";padding-top:" + (idx === 0 ? "0" : "4px") + ";";
+          const summary = document.createElement("summary");
+          const epCount = groups.get(k)[0].episodes.length;
+          const label = k === "?" ? "Season ?" : "Season " + String(k).padStart(2, "0");
+          summary.style.cssText = "font-size:10px;color:#8a98a8;text-transform:uppercase;letter-spacing:0.05em;padding:6px 0 2px;cursor:pointer;list-style:none;user-select:none;";
+          const caret = document.createElement("span");
+          caret.textContent = "▸";
+          caret.style.cssText = "display:inline-block;width:10px;margin-right:4px;transition:transform 0.15s ease;";
+          summary.appendChild(caret);
+          summary.appendChild(document.createTextNode(label + " · " + epCount + " episode" + (epCount === 1 ? "" : "s")));
+          details.addEventListener("toggle", () => {
+            caret.style.transform = details.open ? "rotate(90deg)" : "rotate(0deg)";
+          });
+          details.appendChild(summary);
+          const body = document.createElement("div");
+          body.style.cssText = "padding-top:4px;";
+          groups.get(k).forEach((o) => {
+            body.appendChild(buildOptionRow(o, (btn) =>
+              startSeriesPack(modal, title, year, o.season, o.episodes, btn)
+            ));
+          });
+          details.appendChild(body);
+          wrapperBody.appendChild(details);
         });
       })
       .catch((e) => {
@@ -307,12 +399,54 @@
       });
   }
 
+  function buildOptionRow(o, onClick) {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;flex-direction:column;gap:2px;margin:4px 0;padding:6px 8px;background:#0e1216;border:1px solid #232a33;border-radius:4px;cursor:pointer;";
+    const line1Parts = [o.quality, o.size].filter(Boolean);
+    const tags = (o.tags || []).join(", ");
+    const line2Parts = [o.encoder, tags].filter(Boolean);
+
+    const line1 = document.createElement("div");
+    line1.style.cssText = "font-size:12px;font-weight:600;color:#e8eef5;";
+    line1.textContent = line1Parts.join(" · ");
+    row.appendChild(line1);
+
+    if (line2Parts.length) {
+      const line2 = document.createElement("div");
+      line2.style.cssText = "font-size:10px;color:#8a98a8;";
+      line2.textContent = line2Parts.join(" | ");
+      row.appendChild(line2);
+    }
+
+    row.addEventListener("click", () => onClick(row));
+    row.addEventListener("mouseenter", () => { row.style.background = "#151b22"; });
+    row.addEventListener("mouseleave", () => { row.style.background = "#0e1216"; });
+    return row;
+  }
+
   function startDownload(modal, title, url, btn, kind, year) {
-    btn.disabled = true;
+    btn.style.pointerEvents = "none";
+    btn.style.opacity = "0.6";
     btn.textContent = "Queued…";
     api("/api/download", { method: "POST", body: JSON.stringify({ title, url, kind: kind || "unknown", year: year || null }) })
       .then(() => { btn.textContent = "Queued ✓"; refreshJobs(modal); })
-      .catch((e) => { btn.disabled = false; btn.textContent = "Retry"; showError(modal, e.message); });
+      .catch((e) => { btn.style.pointerEvents = ""; btn.style.opacity = ""; btn.textContent = "Retry"; showError(modal, e.message); });
+  }
+
+  function startSeriesPack(modal, title, year, season, episodes, btn) {
+    btn.style.pointerEvents = "none";
+    btn.style.opacity = "0.6";
+    btn.textContent = "Queuing " + episodes.length + "…";
+    api("/api/download/series-pack", {
+      method: "POST",
+      body: JSON.stringify({ title, year: year || null, season: season || null, episodes }),
+    })
+      .then((resp) => {
+        const n = resp && resp.job_ids ? resp.job_ids.length : episodes.length;
+        btn.textContent = "Queued " + n + " ✓";
+        refreshJobs(modal);
+      })
+      .catch((e) => { btn.style.pointerEvents = ""; btn.style.opacity = ""; btn.textContent = "Retry"; showError(modal, e.message); });
   }
 
   function refreshJobs(modal) {

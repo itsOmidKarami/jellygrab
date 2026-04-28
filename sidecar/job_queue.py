@@ -60,5 +60,13 @@ class JobQueue:
     def list(self) -> list[JobStatus]:
         return sorted(self._jobs.values(), key=lambda j: j.created_at, reverse=True)
 
+    async def clear_finished(self) -> int:
+        async with self._lock:
+            terminal = {"completed", "failed", "cancelled"}
+            to_drop = [jid for jid, j in self._jobs.items() if j.state in terminal]
+            for jid in to_drop:
+                del self._jobs[jid]
+            return len(to_drop)
+
 
 queue = JobQueue()

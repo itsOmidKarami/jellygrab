@@ -54,13 +54,29 @@
     }
   }
 
+  const PAGE_SIZE = 8;
+  let currentHits = [];
+  let currentPage = 0;
+
   function renderResults(hits) {
-    if (!hits.length) {
+    currentHits = hits;
+    currentPage = 0;
+    renderPage();
+  }
+
+  function renderPage() {
+    removePagination();
+    if (!currentHits.length) {
       $results.innerHTML = `<div class="empty">No results.</div>`;
       return;
     }
+    const totalPages = Math.max(1, Math.ceil(currentHits.length / PAGE_SIZE));
+    if (currentPage >= totalPages) currentPage = totalPages - 1;
+    const start = currentPage * PAGE_SIZE;
+    const pageHits = currentHits.slice(start, start + PAGE_SIZE);
+
     $results.innerHTML = "";
-    for (const hit of hits) {
+    for (const hit of pageHits) {
       const card = document.createElement("div");
       card.className = "card";
       const posterStyle = hit.poster ? `background-image:url('${hit.poster}')` : "";
@@ -83,6 +99,33 @@
     $results.querySelectorAll(".load-options").forEach((btn) => {
       btn.addEventListener("click", (e) => loadOptions(e.currentTarget.parentElement));
     });
+    if (totalPages > 1) renderPagination(totalPages);
+  }
+
+  function removePagination() {
+    const existing = document.getElementById("pagination");
+    if (existing) existing.remove();
+  }
+
+  function renderPagination(totalPages) {
+    const nav = document.createElement("div");
+    nav.id = "pagination";
+    nav.className = "pagination";
+    const prev = document.createElement("button");
+    prev.className = "secondary";
+    prev.textContent = "← Prev";
+    prev.disabled = currentPage === 0;
+    prev.addEventListener("click", () => { currentPage--; renderPage(); });
+    const next = document.createElement("button");
+    next.className = "secondary";
+    next.textContent = "Next →";
+    next.disabled = currentPage >= totalPages - 1;
+    next.addEventListener("click", () => { currentPage++; renderPage(); });
+    const label = document.createElement("span");
+    label.className = "pagination-label";
+    label.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+    nav.append(prev, label, next);
+    $results.insertAdjacentElement("afterend", nav);
   }
 
   async function loadOptions(container) {
@@ -98,17 +141,53 @@
         return;
       }
       container.innerHTML = "";
-      for (const opt of options) {
-        const b = document.createElement("button");
-        if (opt.episodes && opt.episodes.length) {
-          const seasonLabel = opt.season ? `S${String(opt.season).padStart(2, "0")}` : "Season ?";
-          b.textContent = `${seasonLabel} · ${opt.quality} · ${opt.episodes.length} ep${opt.size ? ` · ${opt.size} avg` : ""}`;
-          b.addEventListener("click", () => startSeriesPack(title, year, opt.season, opt.episodes, b));
-        } else {
-          b.textContent = `${opt.quality}${opt.size ? ` · ${opt.size}` : ""}`;
-          b.addEventListener("click", () => startDownload(title, opt.url, b, kind, year));
+      const movieOpts = options.filter((o) => !(o.episodes && o.episodes.length));
+      const seriesOpts = options.filter((o) => o.episodes && o.episodes.length);
+
+      const wrapper = document.createElement("details");
+      wrapper.className = "options-wrapper";
+      wrapper.open = true;
+      const wrapperSummary = document.createElement("summary");
+      wrapperSummary.className = "options-wrapper-header";
+      const totalCount = movieOpts.length + seriesOpts.length;
+      wrapperSummary.textContent = `Download options · ${totalCount}`;
+      wrapper.appendChild(wrapperSummary);
+      const wrapperBody = document.createElement("div");
+      wrapperBody.className = "options-wrapper-body";
+      wrapper.appendChild(wrapperBody);
+      container.appendChild(wrapper);
+
+      for (const opt of movieOpts) {
+        wrapperBody.appendChild(buildOptionButton(opt, (btn) =>
+          startDownload(title, opt.url, btn, kind, year)
+        ));
+      }
+
+      const seasonGroups = new Map();
+      for (const opt of seriesOpts) {
+        const key = opt.season || "?";
+        if (!seasonGroups.has(key)) seasonGroups.set(key, []);
+        seasonGroups.get(key).push(opt);
+      }
+      const sortedKeys = [...seasonGroups.keys()].sort((a, b) => Number(a) - Number(b));
+      for (const key of sortedKeys) {
+        const group = document.createElement("details");
+        group.className = "season-group";
+        const summary = document.createElement("summary");
+        summary.className = "season-header";
+        const epCount = seasonGroups.get(key)[0].episodes.length;
+        const label = key === "?" ? "Season ?" : `Season ${String(key).padStart(2, "0")}`;
+        summary.textContent = `${label} · ${epCount} episode${epCount === 1 ? "" : "s"}`;
+        group.appendChild(summary);
+        const list = document.createElement("div");
+        list.className = "season-options";
+        for (const opt of seasonGroups.get(key)) {
+          list.appendChild(buildOptionButton(opt, (btn) =>
+            startSeriesPack(title, year, opt.season, opt.episodes, btn)
+          ));
         }
-        container.appendChild(b);
+        group.appendChild(list);
+        wrapperBody.appendChild(group);
       }
     } catch (e) {
       container.innerHTML = `<span class="job-detail">Failed: ${escapeHtml(e.message)}</span>`;
@@ -188,6 +267,18 @@
     }
   }
 
+  function buildOptionButton(opt, onClick) {
+    const b = document.createElement("button");
+    b.className = "option-btn";
+    const line1 = [opt.quality, opt.size].filter(Boolean).join(" · ");
+    const tags = (opt.tags || []).join(", ");
+    const line2 = [opt.encoder, tags].filter(Boolean).join(" | ");
+    b.innerHTML = `<span class="opt-primary">${escapeHtml(line1)}</span>` +
+      (line2 ? `<span class="opt-meta">${escapeHtml(line2)}</span>` : "");
+    b.addEventListener("click", () => onClick(b));
+    return b;
+  }
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -196,6 +287,21 @@
 
   $btn.addEventListener("click", search);
   $q.addEventListener("keydown", (e) => { if (e.key === "Enter") search(); });
+
+  const $clear = document.getElementById("clear-jobs");
+  if ($clear) {
+    $clear.addEventListener("click", async () => {
+      $clear.disabled = true;
+      try {
+        await api(`/api/jobs/clear`, { method: "POST" });
+        refreshJobs();
+      } catch (e) {
+        showError(`Clear failed: ${e.message}`);
+      } finally {
+        $clear.disabled = false;
+      }
+    });
+  }
 
   refreshJobs();
   setInterval(refreshJobs, 2000);

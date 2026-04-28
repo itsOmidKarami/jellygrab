@@ -144,6 +144,12 @@ async def api_jobs() -> list[dict]:
     return [j.to_dict() for j in queue.list()]
 
 
+@app.post("/api/jobs/clear")
+async def api_jobs_clear() -> dict:
+    cleared = await queue.clear_finished()
+    return {"cleared": cleared}
+
+
 @app.get("/api/session-status")
 async def api_session_status() -> dict:
     return session_status.to_dict()

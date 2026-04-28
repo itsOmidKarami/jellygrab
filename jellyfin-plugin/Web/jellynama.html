@@ -63,6 +63,15 @@
     button.secondary { background: var(--panel-2); color: var(--text); }
     button.secondary:hover { background: #2e3742; }
     .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .pagination button { padding: 8px 14px; font-size: 13px; }
+    .pagination .pagination-label { color: var(--muted); font-size: 13px; }
     .card {
       background: var(--panel);
       border: 1px solid #2a323d;
@@ -87,10 +96,72 @@
     }
     .badge.in-lib { background: rgba(76, 175, 80, 0.18); color: var(--good); }
     .badge.kind { background: var(--panel-2); color: var(--muted); }
-    .options { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-    .options button { padding: 6px 10px; font-size: 12px; }
+    .options { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+    .options .option-btn,
+    .season-options .option-btn {
+      padding: 6px 10px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      background: var(--panel-2);
+      color: var(--text);
+    }
+    .options .option-btn:hover,
+    .season-options .option-btn:hover { background: #2e3742; }
+    .opt-primary { font-weight: 600; }
+    .opt-meta { font-size: 10px; color: var(--muted); font-weight: 400; }
+    .options-wrapper { display: block; margin-top: 4px; }
+    .options-wrapper-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      padding: 6px 8px;
+      background: var(--panel-2);
+      border-radius: 4px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    .options-wrapper-header::-webkit-details-marker { display: none; }
+    .options-wrapper-header::before {
+      content: "▸";
+      display: inline-block;
+      width: 10px;
+      margin-right: 6px;
+      transition: transform 0.15s ease;
+    }
+    .options-wrapper[open] > .options-wrapper-header::before { transform: rotate(90deg); }
+    .options-wrapper-body { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; }
+    .season-group { display: block; }
+    .season-header {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 6px 0 2px;
+      border-top: 1px solid #2a323d;
+      margin-top: 4px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    .season-header::-webkit-details-marker { display: none; }
+    .season-header::before {
+      content: "▸";
+      display: inline-block;
+      width: 10px;
+      margin-right: 4px;
+      transition: transform 0.15s ease;
+    }
+    .season-group[open] > .season-header::before { transform: rotate(90deg); }
+    .season-group:first-child .season-header { border-top: none; margin-top: 0; }
+    .season-options { display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
     .jobs { margin-top: 32px; }
-    .jobs h2 { font-size: 16px; margin: 0 0 12px; color: var(--muted); }
+    .jobs-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .jobs h2 { font-size: 16px; margin: 0; color: var(--muted); }
+    #clear-jobs { padding: 6px 12px; font-size: 12px; }
     .job {
       background: var(--panel);
       border: 1px solid #2a323d;
@@ -129,7 +200,10 @@
     <div id="error" class="error" hidden></div>
     <div id="results" class="results"></div>
     <div class="jobs">
-      <h2>Downloads</h2>
+      <div class="jobs-head">
+        <h2>Downloads</h2>
+        <button id="clear-jobs" class="secondary">Clear finished</button>
+      </div>
       <div id="jobs"></div>
     </div>
   </main>
