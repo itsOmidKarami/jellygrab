@@ -26,8 +26,8 @@ if not log.handlers:
 
 from curl_cffi.requests import AsyncSession
 
-import flaresolverr_client as fs
-import nama_session
+from . import flaresolverr as fs
+from . import session as nama_session
 from config import settings
 
 

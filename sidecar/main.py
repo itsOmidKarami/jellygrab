@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 import downloader
 import keepalive
-import scraper
+from scrapers import nama as scraper
 from config import settings
 from jellyfin_client import jellyfin
 from job_queue import queue

@@ -5,11 +5,11 @@ from urllib.parse import unquote, urlparse
 
 from curl_cffi.requests import AsyncSession
 
-import nama_session
 from config import settings
 from jellyfin_client import jellyfin
 from job_queue import queue
-from scraper import cookie_jar
+from scrapers.nama import session as nama_session
+from scrapers.nama.scraper import cookie_jar
 
 CHUNK_SIZE = 1024 * 256  # 256 KiB
 PROGRESS_THROTTLE_SEC = 0.5

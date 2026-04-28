@@ -13,9 +13,9 @@ import logging
 import time
 from urllib.parse import unquote
 
-import flaresolverr_client as fs
-import nama_session
-import scraper
+from scrapers import nama as scraper
+from scrapers.nama import flaresolverr as fs
+from scrapers.nama import session as nama_session
 from config import settings
 from session_state import status
 
