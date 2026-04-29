@@ -1,14 +1,14 @@
-/* JellyNama search-view injector
+/* JellyGrab search-view injector
  * Loaded into every Jellyfin web page via index.html patching. Watches for
  * navigation to the search view and adds a "Search 30nama" affordance that
- * opens a modal driven by the JellyNama sidecar API.
+ * opens a modal driven by the JellyGrab sidecar API.
  */
 (function () {
   "use strict";
 
   const PLUGIN_ID = "3a8d4f2e-7c1b-4e6a-9f8d-2b5e1a9c4d7e";
-  const MARKER_ATTR = "data-jellynama-injected";
-  const MODAL_ID = "jellynama-modal";
+  const MARKER_ATTR = "data-jellygrab-injected";
+  const MODAL_ID = "jellygrab-modal";
 
   let sidecarUrl = null;
   let configPromise = null;
@@ -93,7 +93,7 @@
     page.setAttribute(MARKER_ATTR, "1");
 
     const banner = document.createElement("div");
-    banner.className = "jellynama-banner verticalSection";
+    banner.className = "jellygrab-banner verticalSection";
     banner.style.cssText = "padding:12px 16px;margin:8px 0;background:linear-gradient(90deg,rgba(0,164,220,0.10),rgba(0,164,220,0.02));border:1px solid rgba(0,164,220,0.3);border-radius:6px;display:flex;align-items:center;gap:12px;";
     banner.innerHTML =
       '<span style="font-size:22px;line-height:1;">🎬</span>' +
@@ -145,7 +145,7 @@
     modal.innerHTML =
       '<div class="jn-modal-card" style="background:#101418;color:#e8eef4;border:1px solid #2a323d;border-radius:8px;max-width:1100px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
-          '<h2 style="margin:0;flex:1;font-size:18px;">JellyNama · 30nama search</h2>' +
+          '<h2 style="margin:0;flex:1;font-size:18px;">JellyGrab · 30nama search</h2>' +
           '<button is="emby-button" type="button" class="raised jn-modal-retry"><span>Retry</span></button>' +
           '<button is="emby-button" type="button" class="raised jn-modal-close"><span>Close</span></button>' +
         '</div>' +
