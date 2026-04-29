@@ -17,13 +17,23 @@ jobs:
   release:
     name: Release ${{ github.ref_name }} (Jellyfin ${{ matrix.jellyfin }})
     runs-on: ubuntu-latest
+    # Serialize matrix rows so the manifest.json commits to main don't race.
+    concurrency:
+      group: release-plugin-manifest
+      cancel-in-progress: false
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         # Mirror build-plugin.yml — keep these in sync.
         include:
+          - jellyfin: "10.10.7"
+            dotnet: "8.0.x"
+            target_framework: "net8.0"
+            target_abi: "10.10.0.0"
           - jellyfin: "10.11.8"
             dotnet: "9.0.x"
+            target_framework: "net9.0"
             target_abi: "10.11.0.0"
     steps:
       - name: Resolve tag
@@ -53,13 +63,14 @@ jobs:
 
       - name: Restore
         working-directory: jellyfin-plugin
-        run: dotnet restore -p:JellyfinVersion=${{ matrix.jellyfin }}
+        run: dotnet restore -p:JellyfinVersion=${{ matrix.jellyfin }} -p:TargetFramework=${{ matrix.target_framework }}
 
       - name: Build
         working-directory: jellyfin-plugin
         run: |
           dotnet build -c Release --no-restore \
             -p:JellyfinVersion=${{ matrix.jellyfin }} \
+            -p:TargetFramework=${{ matrix.target_framework }} \
             -p:Version=${{ steps.tag.outputs.version }} \
             -p:AssemblyVersion=${{ steps.tag.outputs.assembly_version }} \
             -p:FileVersion=${{ steps.tag.outputs.assembly_version }}
@@ -69,6 +80,7 @@ jobs:
         run: |
           dotnet publish -c Release --no-build \
             -p:JellyfinVersion=${{ matrix.jellyfin }} \
+            -p:TargetFramework=${{ matrix.target_framework }} \
             -p:Version=${{ steps.tag.outputs.version }} \
             -p:AssemblyVersion=${{ steps.tag.outputs.assembly_version }} \
             -p:FileVersion=${{ steps.tag.outputs.assembly_version }} \
@@ -115,6 +127,8 @@ jobs:
           MANIFEST=jellyfin-plugin/manifest.json
 
           # Prepend (or replace if same version) entry in versions[].
+          # Dedupe on (version, targetAbi) so sibling matrix rows for different
+          # Jellyfin ABIs coexist instead of overwriting each other.
           tmp=$(mktemp)
           jq --arg version "$VERSION" \
              --arg targetAbi "$TARGET_ABI" \
@@ -130,7 +144,7 @@ jobs:
                 sourceUrl: $sourceUrl,
                 checksum: $checksum,
                 timestamp: $timestamp
-              }] + ((.[0].versions // []) | map(select(.version != $version)))
+              }] + ((.[0].versions // []) | map(select(.version != $version or .targetAbi != $targetAbi)))
             )
           ' "$MANIFEST" > "$tmp"
           mv "$tmp" "$MANIFEST"
@@ -142,5 +156,7 @@ jobs:
             echo "manifest.json unchanged — nothing to commit"
             exit 0
           fi
-          git commit -m "Publish JellyGrab ${TAG} to manifest [skip ci]"
+          git commit -m "Publish JellyGrab ${TAG} (Jellyfin ${{ matrix.jellyfin }}) to manifest [skip ci]"
+          # Rebase onto any commit a sibling matrix row already pushed.
+          git pull --rebase origin main
           git push origin HEAD:main

@@ -20,10 +20,16 @@ jobs:
       fail-fast: false
       matrix:
         # Add a row here when supporting a new Jellyfin minor.
-        # `dotnet` must match the .NET runtime Jellyfin ships with for that version.
+        # `dotnet` and `target_framework` must match the .NET runtime Jellyfin ships with
+        # for that version (10.10.x → .NET 8, 10.11.x → .NET 9).
         include:
+          - jellyfin: "10.10.7"
+            dotnet: "8.0.x"
+            target_framework: "net8.0"
+            target_abi: "10.10.0.0"
           - jellyfin: "10.11.8"
             dotnet: "9.0.x"
+            target_framework: "net9.0"
             target_abi: "10.11.0.0"
     defaults:
       run:
@@ -36,13 +42,13 @@ jobs:
           dotnet-version: ${{ matrix.dotnet }}
 
       - name: Restore
-        run: dotnet restore -p:JellyfinVersion=${{ matrix.jellyfin }}
+        run: dotnet restore -p:JellyfinVersion=${{ matrix.jellyfin }} -p:TargetFramework=${{ matrix.target_framework }}
 
       - name: Build
-        run: dotnet build -c Release --no-restore -p:JellyfinVersion=${{ matrix.jellyfin }}
+        run: dotnet build -c Release --no-restore -p:JellyfinVersion=${{ matrix.jellyfin }} -p:TargetFramework=${{ matrix.target_framework }}
 
       - name: Publish
-        run: dotnet publish -c Release --no-build -p:JellyfinVersion=${{ matrix.jellyfin }} -o publish
+        run: dotnet publish -c Release --no-build -p:JellyfinVersion=${{ matrix.jellyfin }} -p:TargetFramework=${{ matrix.target_framework }} -o publish
 
       - name: Verify DLL produced
         run: test -f publish/Jellyfin.Plugin.JellyGrab.dll
