@@ -18,3 +18,7 @@ obj/
 # Editor
 .idea/
 .vscode/
+
+# Local-only planning / agent scratch
+docs/superpowers/
+.claude/

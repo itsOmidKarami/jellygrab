@@ -13,7 +13,10 @@ class Scraper(Protocol):
     """Shape every scraper module is expected to expose.
 
     The protocol is structural — a scraper just needs callables with these
-    names. See `scrapers/nama/scraper.py` for the reference implementation.
+    names. Scrapers are imported as modules; the `self` parameter below is
+    a notation artifact of `typing.Protocol` and should be ignored when
+    implementing — write module-level `async def` functions.
+    See `scrapers/nama/scraper.py` for the reference implementation.
     """
 
     async def startup(self) -> None: ...
