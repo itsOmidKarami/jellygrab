@@ -65,6 +65,8 @@ jobs:
           file: sidecar/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            BUILD_VERSION=${{ steps.tag.outputs.version }}
           tags: |
             ${{ steps.img.outputs.name }}:${{ steps.tag.outputs.version }}
             ${{ steps.img.outputs.name }}:${{ steps.tag.outputs.minor }}

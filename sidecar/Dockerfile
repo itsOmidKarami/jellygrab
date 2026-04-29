@@ -17,6 +17,9 @@ RUN uv sync --frozen --no-dev || uv sync --no-dev
 COPY sidecar/ /app/sidecar/
 COPY jellyfin-plugin/ /app/jellyfin-plugin/
 
+ARG BUILD_VERSION=dev
+ENV JELLYGRAB_BUILD_VERSION=$BUILD_VERSION
+
 WORKDIR /app/sidecar
 EXPOSE 8765
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8765"]
