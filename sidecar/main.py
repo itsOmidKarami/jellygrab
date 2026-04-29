@@ -79,6 +79,22 @@ async def api_version() -> dict:
     return {"api": API_VERSION, "build": BUILD_VERSION}
 
 
+def _norm_title(s: str) -> str:
+    return " ".join((s or "").lower().split())
+
+
+def _is_library_match(hit_title: str, hit_year: str | None, item: dict) -> bool:
+    # Jellyfin's searchTerm is a substring/fuzzy match, so "Friends" returns
+    # "Friends with Benefits" too. Require an exact normalized title; if a year
+    # is present on both sides, it must also agree.
+    if _norm_title(hit_title) != _norm_title(item.get("Name", "")):
+        return False
+    item_year = item.get("ProductionYear")
+    if hit_year and item_year and str(item_year) != str(hit_year):
+        return False
+    return True
+
+
 @app.get("/api/search")
 async def api_search(q: str) -> list[dict]:
     if not q.strip():
@@ -87,9 +103,10 @@ async def api_search(q: str) -> list[dict]:
     hits: list[dict] = []
     for r in results:
         try:
-            matches = await jellyfin.search_library(r.title)
+            candidates = await jellyfin.search_library(r.title)
         except Exception:
-            matches = []
+            candidates = []
+        matches = [c for c in candidates if _is_library_match(r.title, r.year, c)]
         hits.append(
             SearchHit(
                 **r.to_dict(),
