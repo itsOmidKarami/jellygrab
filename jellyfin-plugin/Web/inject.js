@@ -158,7 +158,8 @@
     modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:99999;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:40px 16px;box-sizing:border-box;";
     modal.innerHTML =
       // flex:1 1 auto + min-width:0 prevents card shrink-to-fit on WebOS WebKit.
-      '<div class="jn-modal-card" style="background:#101418;color:#e8eef4;border:1px solid #2a323d;border-radius:8px;max-width:1100px;width:100%;flex:1 1 auto;min-width:0;box-sizing:border-box;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">' +
+      // min-height fills most of the TV viewport instead of hugging content.
+      '<div class="jn-modal-card" style="background:#101418;color:#e8eef4;border:1px solid #2a323d;border-radius:8px;max-width:1100px;width:100%;min-height:calc(100vh - 80px);flex:1 1 auto;min-width:0;box-sizing:border-box;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
           '<h2 style="margin:0;flex:1;font-size:18px;">JellyGrab · 30nama search</h2>' +
           '<button is="emby-button" type="button" class="raised jn-modal-retry"><span>Retry</span></button>' +
