@@ -14,6 +14,7 @@ from config import settings
 from jellyfin_client import jellyfin
 from job_queue import queue
 from session_state import status as session_status
+from version import API_VERSION, BUILD_VERSION
 
 
 def _ensure_cookies_file() -> None:
@@ -41,7 +42,7 @@ async def lifespan(_: FastAPI):
         await scraper.shutdown()
 
 
-app = FastAPI(title="JellyGrab Sidecar", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="JellyGrab Sidecar", version=BUILD_VERSION, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,6 +72,11 @@ class SearchHit(BaseModel):
 @app.get("/api/health")
 async def health() -> dict:
     return {"ok": True}
+
+
+@app.get("/api/version")
+async def api_version() -> dict:
+    return {"api": API_VERSION, "build": BUILD_VERSION}
 
 
 @app.get("/api/search")
