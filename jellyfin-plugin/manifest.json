@@ -6,6 +6,15 @@
     "overview": "JellyGrab — Jellyfin downloader plugin",
     "owner": "jellygrab",
     "category": "General",
-    "versions": []
+    "versions": [
+      {
+        "version": "0.1.0.0",
+        "changelog": "Release v0.1.0",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/itsOmidKarami/jellygrab/releases/download/v0.1.0/jellygrab-jellyfin-10.11.8.zip",
+        "checksum": "6eecf754397d0914e30a7250381c08c7",
+        "timestamp": "2026-04-29T18:23:36Z"
+      }
+    ]
   }
 ]
