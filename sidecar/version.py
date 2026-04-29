@@ -9,4 +9,4 @@ GHCR image tag. It moves independently of the plugin DLL.
 """
 
 API_VERSION = 1
-BUILD_VERSION = "0.1.0"
+BUILD_VERSION = "0.1.1"
