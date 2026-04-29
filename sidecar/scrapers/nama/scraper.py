@@ -6,7 +6,6 @@ successful call we sync the freshly minted cookies + UA into our local jar so
 the curl_cffi downloader can keep using them for the actual `.mkv` fetch.
 """
 
-import asyncio
 import json
 import logging
 import re
@@ -14,7 +13,6 @@ from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin
 
 log = logging.getLogger("jellygrab.scraper")
 log.setLevel(logging.INFO)

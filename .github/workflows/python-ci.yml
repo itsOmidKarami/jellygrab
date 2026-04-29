@@ -1,0 +1,42 @@
+name: Python CI
+
+on:
+  pull_request:
+    paths:
+      - "sidecar/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/python-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "sidecar/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/python-ci.yml"
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Ruff lint
+        run: uv run ruff check sidecar
+
+      - name: Compile-all (catch syntax errors)
+        run: uv run python -m compileall -q sidecar
+
+      - name: Pytest
+        run: uv run pytest
