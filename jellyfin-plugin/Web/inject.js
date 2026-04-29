@@ -6,7 +6,7 @@
 (function () {
   "use strict";
 
-  const PLUGIN_ID = "3a8d4f2e-7c1b-4e6a-9f8d-2b5e1a9c4d7e";
+  const PLUGIN_ID = "826a65d9-ec1d-4ff7-b4b6-d5ee1dd199d2";
   const MARKER_ATTR = "data-jellygrab-injected";
   const MODAL_ID = "jellygrab-modal";
 
