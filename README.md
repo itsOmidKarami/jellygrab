@@ -83,6 +83,25 @@ versions in
 [jellyfin-plugin/Jellyfin.Plugin.JellyGrab.csproj](jellyfin-plugin/Jellyfin.Plugin.JellyGrab.csproj)
 (or pass `-p:JellyfinVersion=X.Y.Z` at build time).
 
+## Plugin ↔ Sidecar Compatibility
+
+The plugin DLL and the sidecar image are released under the same `vX.Y.Z` git
+tag — that's the lockstep half. The runtime half is a version handshake:
+
+- The sidecar exposes `GET /api/version` returning `{api, build}`.
+- `inject.js` declares `EXPECTED_API_VERSION` and warns inside the search modal
+  if the sidecar's `api` doesn't match.
+
+`api` is bumped only when an `/api/*` route the plugin uses is removed or
+breaking-changed. Adding new routes or new optional fields does **not** bump
+it. So a plugin and sidecar from different builds usually still work — the
+handshake just tells you loudly when they don't.
+
+The sidecar's `api` version is independent of Jellyfin — the sidecar only uses
+stable Jellyfin HTTP endpoints (`/Items`, `/Library/Refresh`), so a sidecar
+release is **not** required for every Jellyfin upgrade. Only the plugin DLL
+needs rebuilding when Jellyfin's plugin ABI changes.
+
 ## Disclaimer
 
 JellyGrab is a generic downloader framework. It does **not** host, distribute,

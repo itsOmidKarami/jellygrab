@@ -9,9 +9,12 @@
   const PLUGIN_ID = "826a65d9-ec1d-4ff7-b4b6-d5ee1dd199d2";
   const MARKER_ATTR = "data-jellygrab-injected";
   const MODAL_ID = "jellygrab-modal";
+  // Bump when the sidecar makes a breaking change to a route this plugin calls.
+  const EXPECTED_API_VERSION = 1;
 
   let sidecarUrl = null;
   let configPromise = null;
+  let versionCheckPromise = null;
 
   function getConfig() {
     if (configPromise) return configPromise;
@@ -34,6 +37,30 @@
         return r.json();
       })
     );
+  }
+
+  // Resolves to {ok: true} on match, {ok: false, message} on mismatch or if the
+  // sidecar is too old to expose /api/version. Cached for the page lifetime.
+  function checkVersion() {
+    if (versionCheckPromise) return versionCheckPromise;
+    versionCheckPromise = api("/api/version")
+      .then((v) => {
+        if (Number(v && v.api) !== EXPECTED_API_VERSION) {
+          return {
+            ok: false,
+            message: "Plugin expects sidecar API v" + EXPECTED_API_VERSION +
+              " but sidecar reports v" + (v && v.api) +
+              " (build " + ((v && v.build) || "unknown") + "). Upgrade the sidecar or plugin so they match.",
+          };
+        }
+        return { ok: true };
+      })
+      .catch(() => ({
+        ok: false,
+        message: "Plugin expects sidecar API v" + EXPECTED_API_VERSION +
+          " but sidecar did not respond to /api/version. The sidecar is likely older than this plugin — upgrade it.",
+      }));
+    return versionCheckPromise;
   }
 
   function escapeHtml(s) {
@@ -202,10 +229,13 @@
   function openModal(query) {
     const modal = ensureModal();
     modal.style.display = "flex";
-    runSearch(modal, query);
-    refreshJobs(modal);
-    if (jobsTimer) clearInterval(jobsTimer);
-    jobsTimer = setInterval(() => refreshJobs(modal), 2000);
+    checkVersion().then((v) => {
+      if (!v.ok) showError(modal, v.message);
+      runSearch(modal, query);
+      refreshJobs(modal);
+      if (jobsTimer) clearInterval(jobsTimer);
+      jobsTimer = setInterval(() => refreshJobs(modal), 2000);
+    });
   }
 
   function closeModal() {

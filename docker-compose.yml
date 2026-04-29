@@ -25,6 +25,11 @@ services:
       - jellygrab-net
 
   jellygrab:
+    # End users: pull a published image from GHCR. Override the tag with
+    # SIDECAR_IMAGE in .env to pin a specific release (e.g. ":0.2.0").
+    # Developers: `docker compose build` will rebuild from sidecar/Dockerfile
+    # and tag the result as this image name.
+    image: ${SIDECAR_IMAGE:-ghcr.io/itsomidkarami/jellygrab-sidecar:latest}
     build:
       context: .
       dockerfile: sidecar/Dockerfile
