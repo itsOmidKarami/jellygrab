@@ -4,28 +4,24 @@ Guidance for Claude Code when working in this repo.
 
 ## What This Is
 
-JellyNama is a Jellyfin companion that searches 30nama.com (Persian media site), downloads `.mkv`/`.mp4` files via direct HTTP, and triggers a Jellyfin library refresh. It has two parts:
+JellyGrab is a Jellyfin downloader companion: a FastAPI sidecar plus a Jellyfin plugin. Scrapers are pluggable under `sidecar/scrapers/<name>/`. One reference scraper (`sidecar/scrapers/nama/`) targets 30nama.com (a Persian-language media site).
 
 - **`sidecar/`** — Python 3.12 + FastAPI backend (the brains)
 - **`jellyfin-plugin/`** — JS frontend plugin loaded by Jellyfin's web client
 
 Both are deployed via `docker-compose.yml` on the same Docker network as Jellyfin.
 
-## Source of Truth
-
-The implementation plan lives in [docs/plan.md](docs/plan.md). Phases are sequential: don't start Phase 2 work before Phase 1 is functional.
-
 ## Conventions
 
 - **Python:** async/await throughout (FastAPI + `httpx`). No `requests`, no sync I/O in route handlers.
 - **No auth.** The sidecar runs on a private Docker network. Don't add API keys or login flows unless the user asks.
 - **Config via env vars only.** `JELLYFIN_URL`, `JELLYFIN_API_KEY`, `DOWNLOAD_DIR`. Read them in `sidecar/config.py`.
-- **Job state is in-memory.** A simple `dict[str, JobStatus]` in `queue.py`. No Redis, no DB — kept intentionally simple.
+- **Job state is in-memory.** A simple `dict[str, JobStatus]` in `job_queue.py`. No Redis, no DB — kept intentionally simple.
 - **JS plugin is vanilla.** No build step, no React, no TypeScript. Just `.js` and `.html` files served statically by the sidecar.
 
 ## Working With 30nama.com
 
-The site structure must be inspected before writing the scraper — don't guess selectors. When implementing `scraper.py`, fetch a real page first and verify the HTML shape. The site exposes direct `.mkv`/`.mp4` links on detail pages (no torrents, no JS rendering required as far as we know).
+The 30nama scraper lives in `sidecar/scrapers/nama/`. The site structure must be inspected before changing selectors — don't guess. The site exposes direct `.mkv`/`.mp4` links on detail pages (no torrents, no JS rendering required as far as we know). Login is captcha-gated, so the scraper relies on browser-exported cookies (`NAMA_COOKIE` / `NAMA_COOKIES_FILE`).
 
 ## Jellyfin API Notes
 
@@ -39,3 +35,4 @@ The site structure must be inspected before writing the scraper — don't guess 
 - Don't propose a C#/.NET native plugin — the user explicitly chose the sidecar route.
 - Don't add authentication unless asked.
 - Don't introduce a frontend framework for the JS plugin.
+- Don't reframe the project away from "generic downloader framework with one example scraper". The narrative is intentional — see `docs/superpowers/specs/2026-04-29-public-release-design.md`.
