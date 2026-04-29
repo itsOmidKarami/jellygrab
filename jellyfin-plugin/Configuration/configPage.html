@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>JellyNama</title>
+  <title>JellyGrab</title>
 </head>
 <body>
-  <div id="JellyNamaConfigPage"
+  <div id="JellyGrabConfigPage"
        data-role="page"
        class="page type-interior pluginConfigurationPage"
        data-require="emby-input,emby-button,emby-collapse">
@@ -13,7 +13,7 @@
 
         <div class="verticalSection">
           <div class="sectionTitleContainer flex align-items-center">
-            <h2 class="sectionTitle">JellyNama</h2>
+            <h2 class="sectionTitle">JellyGrab</h2>
           </div>
           <p class="fieldDescription">
             Search 30nama.com and download directly into your Jellyfin library.
@@ -25,7 +25,7 @@
             <label class="inputLabel inputLabelUnfocused" for="jnSidecarUrl">Sidecar URL</label>
             <input is="emby-input" type="text" id="jnSidecarUrl" required />
             <div class="fieldDescription">
-              Where the JellyNama FastAPI sidecar is reachable from your browser
+              Where the JellyGrab FastAPI sidecar is reachable from your browser
               (e.g. <code>http://localhost:8765</code>). Must be CORS-enabled (the sidecar already is).
             </div>
           </div>
@@ -84,8 +84,8 @@
 
     <script type="text/javascript">
       (function () {
-        const PLUGIN_ID = "3a8d4f2e-7c1b-4e6a-9f8d-2b5e1a9c4d7e";
-        const page = document.querySelector("#JellyNamaConfigPage");
+        const PLUGIN_ID = "826a65d9-ec1d-4ff7-b4b6-d5ee1dd199d2";
+        const page = document.querySelector("#JellyGrabConfigPage");
 
         let sidecarUrl = "http://localhost:8765";
 

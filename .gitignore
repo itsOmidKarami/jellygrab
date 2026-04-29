@@ -13,8 +13,13 @@ jellyfin/cache/
 # .NET build artifacts
 bin/
 obj/
+publish/
 *.user
 
 # Editor
 .idea/
 .vscode/
+
+# Local-only planning / agent scratch
+docs/superpowers/
+.claude/

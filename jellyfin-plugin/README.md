@@ -1,58 +1,35 @@
-# JellyNama — Jellyfin Plugin
+# JellyGrab — Jellyfin Plugin
 
-A Jellyfin .NET plugin that adds a Dashboard page wired to the [JellyNama sidecar](../sidecar/) for searching 30nama.com and queuing downloads into your library.
+The Jellyfin .NET plugin half of [JellyGrab](../README.md). Adds a Dashboard
+page wired to the JellyGrab FastAPI sidecar, plus a small JS injection that
+puts a "Search the web" button into Jellyfin's built-in search view.
 
-## Architecture
+## Install (manual)
 
-```
-[JF Dashboard page] ── HTTP ──▶ [Sidecar :8765] ── Playwright ──▶ 30nama.com
-        ▲                              │
-        │                              └── httpx stream ──▶ /media/downloads/*.mkv
-        └────────── REST ─────────── [Jellyfin :8096] ── library refresh
-```
+1. Build the plugin (see "Build" below) or download a release zip.
+2. Create a folder `JellyGrab_0.1.0.0/` under your Jellyfin
+   `config/plugins/` directory and drop the published DLL inside.
+3. Restart Jellyfin.
+4. Dashboard → Plugins → My Plugins → JellyGrab → set the Sidecar URL.
 
-The plugin is a thin shell: a single Dashboard page (HTML+JS embedded as resources in the DLL) that calls the sidecar API. All heavy lifting — scraping, downloading, JF library check/refresh — lives in the Python sidecar.
+## Install (via plugin catalog)
+
+1. Build the plugin and zip the publish output:
+   `zip JellyGrab_0.1.0.0.zip Jellyfin.Plugin.JellyGrab.dll`
+2. Compute MD5: `md5sum JellyGrab_0.1.0.0.zip` and update `manifest.json`'s
+   `checksum` and `sourceUrl`.
+3. Host the zip and updated `manifest.json` somewhere reachable.
+4. In Jellyfin: Dashboard → Plugins → Repositories → add the manifest URL.
+5. Catalog → JellyGrab → Install.
+
+## What It Does
+
+After install, "JellyGrab" appears in the Dashboard sidebar. The page lets
+you search any active scraper, see results, and queue downloads.
 
 ## Build
 
-Requires the .NET 8 SDK.
+`dotnet publish jellyfin-plugin/Jellyfin.Plugin.JellyGrab.csproj -c Release -o publish`
 
-```bash
-cd jellyfin-plugin
-dotnet publish -c Release
-```
-
-The DLL lands at `bin/Release/net8.0/publish/Jellyfin.Plugin.JellyNama.dll`.
-
-## Install (manual / dev)
-
-1. Find your Jellyfin plugins directory:
-   - Docker: `/config/plugins/`
-   - Linux: `/var/lib/jellyfin/plugins/` or `~/.local/share/jellyfin/plugins/`
-   - macOS: `~/Library/Application Support/jellyfin/plugins/`
-2. Create a folder `JellyNama_0.1.0.0/` and drop the published DLL inside.
-3. Restart Jellyfin.
-4. Dashboard → Plugins → My Plugins → JellyNama → set the Sidecar URL.
-
-## Install (via plugin repository)
-
-1. Build the plugin, zip the publish output: `zip JellyNama_0.1.0.0.zip Jellyfin.Plugin.JellyNama.dll`.
-2. Compute MD5: `md5sum JellyNama_0.1.0.0.zip` and update `manifest.json`'s `checksum` and `sourceUrl`.
-3. Host the zip + manifest.json somewhere reachable.
-4. In Jellyfin Dashboard → Plugins → Repositories → Add, point at the manifest URL.
-5. Catalog → JellyNama → Install.
-
-## Usage
-
-After install, "JellyNama" appears in the Dashboard sidebar. The page has:
-- **Sidecar URL** field — set to where the sidecar is reachable from your browser (default `http://localhost:8765`).
-- **Search** box — queries 30nama via the sidecar.
-- **Result cards** — show "In library" badge if Jellyfin already has the title.
-- **Load options** → quality buttons → click to enqueue a download.
-- **Downloads** panel — live progress, polled every 2s.
-
-## Notes
-
-- The sidecar must be running and reachable from the browser (not just from the JF server).
-- Sidecar already serves CORS `*`, so cross-origin from JF works.
-- Plugin GUID: `3a8d4f2e-7c1b-4e6a-9f8d-2b5e1a9c4d7e`.
+To target a different Jellyfin minor version, pass
+`-p:JellyfinVersion=10.11.0` (or whichever).

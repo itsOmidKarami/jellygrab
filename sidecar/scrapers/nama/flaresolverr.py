@@ -27,7 +27,7 @@ import httpx
 
 from config import settings
 
-log = logging.getLogger("jellynama.flaresolverr")
+log = logging.getLogger("jellygrab.flaresolverr")
 log.setLevel(logging.INFO)
 if not log.handlers:
     _h = logging.StreamHandler()

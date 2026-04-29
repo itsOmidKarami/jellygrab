@@ -3,7 +3,7 @@
 
   // API base: assume the page is served by the sidecar itself; otherwise allow override via ?api=...
   const params = new URLSearchParams(location.search);
-  const API_BASE = params.get("api") || window.JELLYNAMA_API || location.origin;
+  const API_BASE = params.get("api") || window.JELLYGRAB_API || location.origin;
 
   const $q = document.getElementById("q");
   const $btn = document.getElementById("search-btn");

@@ -46,7 +46,7 @@ def load_settings() -> Settings:
         plugin_dir=Path(os.getenv("PLUGIN_DIR", "/app/jellyfin-plugin")),
         keepalive_interval_sec=int(os.getenv("KEEPALIVE_INTERVAL_SEC", "1800")),
         flaresolverr_url=os.getenv("FLARESOLVERR_URL", "http://flaresolverr:8191").rstrip("/"),
-        flaresolverr_session=os.getenv("FLARESOLVERR_SESSION", "jellynama"),
+        flaresolverr_session=os.getenv("FLARESOLVERR_SESSION", "jellygrab"),
         flaresolverr_timeout_ms=int(os.getenv("FLARESOLVERR_TIMEOUT_MS", "60000")),
     )
 

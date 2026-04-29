@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 import downloader
 import keepalive
-import scraper
+from scrapers import nama as scraper
 from config import settings
 from jellyfin_client import jellyfin
 from job_queue import queue
@@ -41,7 +41,7 @@ async def lifespan(_: FastAPI):
         await scraper.shutdown()
 
 
-app = FastAPI(title="JellyNama Sidecar", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="JellyGrab Sidecar", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

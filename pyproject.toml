@@ -1,7 +1,7 @@
 [project]
-name = "jellynama"
+name = "jellygrab"
 version = "0.1.0"
-description = "Jellyfin companion sidecar for searching and downloading from 30nama.com"
+description = "JellyGrab — a Jellyfin downloader sidecar with pluggable scrapers (30nama scraper bundled)."
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
