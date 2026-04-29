@@ -25,8 +25,10 @@
             <label class="inputLabel inputLabelUnfocused" for="jnSidecarUrl">Sidecar URL</label>
             <input is="emby-input" type="text" id="jnSidecarUrl" required />
             <div class="fieldDescription">
-              Where the JellyGrab FastAPI sidecar is reachable from your browser
-              (e.g. <code>http://localhost:8765</code>). Must be CORS-enabled (the sidecar already is).
+              Where the JellyGrab FastAPI sidecar is reachable <strong>from the Jellyfin server</strong>
+              (e.g. <code>http://jellygrab:8765</code> for the bundled <code>docker-compose.yml</code>,
+              or <code>http://localhost:8765</code> for a bare-metal install on the same host).
+              The Jellyfin plugin proxies all browser API calls to this URL — your browser never talks to the sidecar directly.
             </div>
           </div>
           <button is="emby-button" type="submit" class="raised button-submit block">
@@ -86,11 +88,11 @@
       (function () {
         const PLUGIN_ID = "826a65d9-ec1d-4ff7-b4b6-d5ee1dd199d2";
         const page = document.querySelector("#JellyGrabConfigPage");
-
-        let sidecarUrl = "http://localhost:8765";
+        // All sidecar calls go through the plugin's reverse proxy on Jellyfin.
+        const API_BASE = "/JellyGrab";
 
         function api(path, opts) {
-          return fetch(sidecarUrl.replace(/\/$/, "") + path, Object.assign({
+          return fetch(API_BASE + path, Object.assign({
             headers: { "Content-Type": "application/json" }
           }, opts || {})).then(r => {
             if (!r.ok) return r.text().then(t => { throw new Error(r.status + " " + (t || r.statusText)); });
@@ -284,15 +286,14 @@
 
         page.addEventListener("viewshow", function () {
           ApiClient.getPluginConfiguration(PLUGIN_ID).then(cfg => {
-            sidecarUrl = cfg.SidecarUrl || "http://localhost:8765";
-            page.querySelector("#jnSidecarUrl").value = sidecarUrl;
-            refreshJobs();
-            refreshSession();
-            if (jobsTimer) clearInterval(jobsTimer);
-            if (sessionTimer) clearInterval(sessionTimer);
-            jobsTimer = setInterval(refreshJobs, 2000);
-            sessionTimer = setInterval(refreshSession, 10000);
+            page.querySelector("#jnSidecarUrl").value = cfg.SidecarUrl || "";
           });
+          refreshJobs();
+          refreshSession();
+          if (jobsTimer) clearInterval(jobsTimer);
+          if (sessionTimer) clearInterval(sessionTimer);
+          jobsTimer = setInterval(refreshJobs, 2000);
+          sessionTimer = setInterval(refreshSession, 10000);
         });
 
         page.addEventListener("viewhide", function () {
@@ -310,7 +311,6 @@
             cfg.SidecarUrl = page.querySelector("#jnSidecarUrl").value.trim();
             ApiClient.updatePluginConfiguration(PLUGIN_ID, cfg).then(r => {
               Dashboard.processPluginConfigurationUpdateResult(r);
-              sidecarUrl = cfg.SidecarUrl;
             });
           });
           return false;

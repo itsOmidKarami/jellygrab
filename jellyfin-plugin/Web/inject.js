@@ -6,37 +6,23 @@
 (function () {
   "use strict";
 
-  const PLUGIN_ID = "826a65d9-ec1d-4ff7-b4b6-d5ee1dd199d2";
   const MARKER_ATTR = "data-jellygrab-injected";
   const MODAL_ID = "jellygrab-modal";
   // Bump when the sidecar makes a breaking change to a route this plugin calls.
   const EXPECTED_API_VERSION = 1;
+  // All sidecar API calls go through the plugin's reverse proxy on the Jellyfin
+  // server, so the browser only needs to reach Jellyfin (not the sidecar directly).
+  const API_BASE = "/JellyGrab";
 
-  let sidecarUrl = null;
-  let configPromise = null;
   let versionCheckPromise = null;
 
-  function getConfig() {
-    if (configPromise) return configPromise;
-    if (typeof ApiClient === "undefined" || !ApiClient.getPluginConfiguration) {
-      return Promise.reject(new Error("ApiClient unavailable"));
-    }
-    configPromise = ApiClient.getPluginConfiguration(PLUGIN_ID).then((cfg) => {
-      sidecarUrl = (cfg && cfg.SidecarUrl) || "http://localhost:8765";
-      return sidecarUrl;
-    });
-    return configPromise;
-  }
-
   function api(path, opts) {
-    return getConfig().then((base) =>
-      fetch(base.replace(/\/$/, "") + path, Object.assign({
-        headers: { "Content-Type": "application/json" }
-      }, opts || {})).then((r) => {
-        if (!r.ok) return r.text().then((t) => { throw new Error(r.status + " " + (t || r.statusText)); });
-        return r.json();
-      })
-    );
+    return fetch(API_BASE + path, Object.assign({
+      headers: { "Content-Type": "application/json" }
+    }, opts || {})).then((r) => {
+      if (!r.ok) return r.text().then((t) => { throw new Error(r.status + " " + (t || r.statusText)); });
+      return r.json();
+    });
   }
 
   // Resolves to {ok: true} on match, {ok: false, message} on mismatch or if the
