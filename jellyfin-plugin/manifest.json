@@ -1,17 +1,17 @@
 [
   {
-    "guid": "3a8d4f2e-7c1b-4e6a-9f8d-2b5e1a9c4d7e",
-    "name": "JellyNama",
-    "description": "Search 30nama.com for Persian movies/series and download them into your Jellyfin library via a FastAPI sidecar.",
-    "overview": "30nama → Jellyfin downloader",
-    "owner": "jellynama",
+    "guid": "826a65d9-ec1d-4ff7-b4b6-d5ee1dd199d2",
+    "name": "JellyGrab",
+    "description": "A Jellyfin companion plugin that adds a downloader page wired to the JellyGrab sidecar service.",
+    "overview": "JellyGrab — Jellyfin downloader plugin",
+    "owner": "jellygrab",
     "category": "General",
     "versions": [
       {
         "version": "0.1.0.0",
         "changelog": "Initial release.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://example.com/jellynama_0.1.0.0.zip",
+        "sourceUrl": "https://example.com/jellygrab_0.1.0.0.zip",
         "checksum": "REPLACE_WITH_MD5_OF_ZIP",
         "timestamp": "2026-04-26T00:00:00Z"
       }

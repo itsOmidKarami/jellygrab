@@ -1,15 +1,15 @@
-name: "JellyNama"
-guid: "3a8d4f2e-7c1b-4e6a-9f8d-2b5e1a9c4d7e"
+name: "JellyGrab"
+guid: "826a65d9-ec1d-4ff7-b4b6-d5ee1dd199d2"
 version: "0.1.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 overview: "Search 30nama.com for Persian movies/series and download them into your Jellyfin library."
 description: |
-  JellyNama adds a Dashboard page that talks to the JellyNama FastAPI sidecar
+  JellyGrab adds a Dashboard page that talks to the JellyGrab FastAPI sidecar
   to search 30nama.com, fetch direct download links, queue downloads into your
   Jellyfin media folder, and trigger a library refresh on completion.
 category: "General"
-owner: "jellynama"
+owner: "jellygrab"
 artifacts:
-  - "Jellyfin.Plugin.JellyNama.dll"
+  - "Jellyfin.Plugin.JellyGrab.dll"
 changelog: "Initial release."

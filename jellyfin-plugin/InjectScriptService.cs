@@ -6,16 +6,16 @@ using MediaBrowser.Common.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.JellyNama;
+namespace Jellyfin.Plugin.JellyGrab;
 
 /// <summary>
-/// Patches Jellyfin web's index.html to load JellyNama's inject.js into every page,
+/// Patches Jellyfin web's index.html to load JellyGrab's inject.js into every page,
 /// so we can augment the built-in search view. Same pattern used by Jellyscrub etc.
 /// </summary>
 public class InjectScriptService : IHostedService
 {
-    private const string Marker = "<!-- JellyNamaInject -->";
-    private const string ScriptTag = "<script defer src=\"/JellyNama/inject.js\"></script>";
+    private const string Marker = "<!-- JellyGrabInject -->";
+    private const string ScriptTag = "<script defer src=\"/JellyGrab/inject.js\"></script>";
 
     private readonly IApplicationPaths _appPaths;
     private readonly ILogger<InjectScriptService> _logger;
@@ -33,7 +33,7 @@ public class InjectScriptService : IHostedService
             var indexPath = Path.Combine(_appPaths.WebPath, "index.html");
             if (!File.Exists(indexPath))
             {
-                _logger.LogWarning("JellyNama: index.html not found at {Path}", indexPath);
+                _logger.LogWarning("JellyGrab: index.html not found at {Path}", indexPath);
                 return Task.CompletedTask;
             }
 
@@ -46,17 +46,17 @@ public class InjectScriptService : IHostedService
             var bodyEnd = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
             if (bodyEnd < 0)
             {
-                _logger.LogWarning("JellyNama: </body> not found in index.html, skipping inject");
+                _logger.LogWarning("JellyGrab: </body> not found in index.html, skipping inject");
                 return Task.CompletedTask;
             }
 
             var patched = html.Insert(bodyEnd, Marker + ScriptTag);
             File.WriteAllText(indexPath, patched);
-            _logger.LogInformation("JellyNama: injected inject.js into {Path}", indexPath);
+            _logger.LogInformation("JellyGrab: injected inject.js into {Path}", indexPath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "JellyNama: failed to inject script into index.html");
+            _logger.LogError(ex, "JellyGrab: failed to inject script into index.html");
         }
 
         return Task.CompletedTask;

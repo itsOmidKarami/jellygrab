@@ -2,18 +2,18 @@ using System.IO;
 using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Jellyfin.Plugin.JellyNama;
+namespace Jellyfin.Plugin.JellyGrab;
 
 [ApiController]
-[Route("JellyNama")]
-public class JellyNamaController : ControllerBase
+[Route("JellyGrab")]
+public class JellyGrabController : ControllerBase
 {
     [HttpGet("inject.js")]
     [Produces("application/javascript")]
     public ActionResult GetInjectJs()
     {
         var stream = GetType().Assembly.GetManifestResourceStream(
-            "Jellyfin.Plugin.JellyNama.Web.inject.js");
+            "Jellyfin.Plugin.JellyGrab.Web.inject.js");
         if (stream is null)
         {
             return NotFound();

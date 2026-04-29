@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using Jellyfin.Plugin.JellyNama.Configuration;
+using Jellyfin.Plugin.JellyGrab.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 
-namespace Jellyfin.Plugin.JellyNama;
+namespace Jellyfin.Plugin.JellyGrab;
 
 public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
@@ -16,12 +16,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         Instance = this;
     }
 
-    public override string Name => "JellyNama";
+    public override string Name => "JellyGrab";
 
-    public override Guid Id => Guid.Parse("3a8d4f2e-7c1b-4e6a-9f8d-2b5e1a9c4d7e");
+    public override Guid Id => Guid.Parse("826a65d9-ec1d-4ff7-b4b6-d5ee1dd199d2");
 
     public override string Description =>
-        "Search 30nama.com for Persian movies/series and download them directly into your Jellyfin library via a sidecar service.";
+        "A Jellyfin companion plugin that adds a downloader page wired to the JellyGrab sidecar service.";
 
     public static Plugin? Instance { get; private set; }
 
@@ -37,8 +37,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         },
         new PluginPageInfo
         {
-            Name = "JellyNamaJs",
-            EmbeddedResourcePath = $"{GetType().Namespace}.Web.jellynama.js",
+            Name = "JellyGrabJs",
+            EmbeddedResourcePath = $"{GetType().Namespace}.Web.jellygrab.js",
         },
     };
 }
