@@ -12,15 +12,19 @@ puts a "Search the web" button into Jellyfin's built-in search view.
 3. Restart Jellyfin.
 4. Dashboard → Plugins → My Plugins → JellyGrab → set the Sidecar URL.
 
-## Install (via plugin catalog)
+## Install (via plugin catalog) — recommended
 
-1. Build the plugin and zip the publish output:
-   `zip JellyGrab_0.1.0.0.zip Jellyfin.Plugin.JellyGrab.dll`
-2. Compute MD5: `md5sum JellyGrab_0.1.0.0.zip` and update `manifest.json`'s
-   `checksum` and `sourceUrl`.
-3. Host the zip and updated `manifest.json` somewhere reachable.
-4. In Jellyfin: Dashboard → Plugins → Repositories → add the manifest URL.
-5. Catalog → JellyGrab → Install.
+The manifest is already hosted on GitHub and kept up to date by CI.
+
+1. In Jellyfin: Dashboard → Plugins → Repositories → add this URL:
+
+   ```text
+   https://raw.githubusercontent.com/itsOmidKarami/jellygrab/main/jellyfin-plugin/manifest.json
+   ```
+
+2. Dashboard → Plugins → Catalog → JellyGrab → Install.
+3. Restart Jellyfin when prompted.
+4. Dashboard → Plugins → My Plugins → JellyGrab → set the Sidecar URL.
 
 ## What It Does
 
