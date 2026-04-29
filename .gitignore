@@ -13,6 +13,7 @@ jellyfin/cache/
 # .NET build artifacts
 bin/
 obj/
+publish/
 *.user
 
 # Editor
