@@ -41,7 +41,7 @@ async def lifespan(_: FastAPI):
         await scraper.shutdown()
 
 
-app = FastAPI(title="JellyNama Sidecar", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="JellyGrab Sidecar", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

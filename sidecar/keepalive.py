@@ -19,7 +19,7 @@ from scrapers.nama import session as nama_session
 from config import settings
 from session_state import status
 
-log = logging.getLogger("jellynama.keepalive")
+log = logging.getLogger("jellygrab.keepalive")
 log.setLevel(logging.INFO)
 if not log.handlers:
     _h = logging.StreamHandler()

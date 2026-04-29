@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
 
-log = logging.getLogger("jellynama.scraper")
+log = logging.getLogger("jellygrab.scraper")
 log.setLevel(logging.INFO)
 if not log.handlers:
     _h = logging.StreamHandler()
@@ -298,7 +298,7 @@ async def get_download_options(detail_url: str) -> list[DownloadOption]:
 
 # ---- series packs (HTML + interface API, both via FS) ----------------------
 
-_DEBUG_DIR = Path("/tmp/jellynama-debug")
+_DEBUG_DIR = Path("/tmp/jellygrab-debug")
 _DOWNLOAD_API = "https://interface.30nama.com/api/v1/action/download/id/{id}"
 _USER_API = "https://interface.30nama.com/api/v1/action/user"
 # Avoid POSTing /action/user on every call — once per process is enough as long

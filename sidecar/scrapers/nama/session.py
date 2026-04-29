@@ -18,7 +18,7 @@ from pathlib import Path
 
 from config import settings
 
-log = logging.getLogger("jellynama.nama_session")
+log = logging.getLogger("jellygrab.nama_session")
 log.setLevel(logging.INFO)
 if not log.handlers:
     _h = logging.StreamHandler()
