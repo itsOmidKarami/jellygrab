@@ -1,9 +1,8 @@
 (function () {
   "use strict";
 
-  // API base: assume the page is served by the sidecar itself; otherwise allow override via ?api=...
-  const params = new URLSearchParams(location.search);
-  const API_BASE = params.get("api") || window.JELLYGRAB_API || location.origin;
+  // All sidecar calls go through the Jellyfin plugin's reverse proxy.
+  const API_BASE = "/JellyGrab";
 
   const $q = document.getElementById("q");
   const $btn = document.getElementById("search-btn");

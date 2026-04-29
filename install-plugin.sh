@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 SRC="jellyfin-plugin/bin/Release/net9.0/publish/Jellyfin.Plugin.JellyGrab.dll"
-DST_DIR="jellyfin/config/plugins/JellyGrab_0.1.0"
+DST_DIR="jellyfin/config/plugins/JellyGrab_0.2.0"
 
 if [[ ! -f "$SRC" ]]; then
   echo "Plugin DLL not found at $SRC" >&2

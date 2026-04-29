@@ -9,5 +9,6 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
         serviceCollection.AddHostedService<InjectScriptService>();
+        serviceCollection.AddHttpClient("JellyGrab");
     }
 }
