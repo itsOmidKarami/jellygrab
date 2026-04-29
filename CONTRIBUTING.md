@@ -25,3 +25,17 @@ PRs welcome. The most useful contributions are:
 
 The Python side uses `ruff` with the config in `pyproject.toml`. Run
 `ruff check sidecar/` before opening a PR.
+
+## Pre-commit hooks (recommended)
+
+`pre-commit` is configured in `.pre-commit-config.yaml`. After cloning:
+
+```bash
+uv sync --group dev          # installs pre-commit alongside ruff/pytest
+uv run pre-commit install                       # runs ruff + actionlint + whitespace hooks on `git commit`
+uv run pre-commit install --hook-type pre-push  # runs pytest on `git push`
+```
+
+The same checks run in CI (`Python CI`, `Actionlint`), so this is purely
+to shorten the feedback loop locally — you can still bypass with
+`--no-verify` when you need to.

@@ -1,0 +1,45 @@
+# Run locally with `pre-commit install` (one-time) — hooks then fire on every
+# `git commit` and `git push`. CI is still the source of truth; these hooks
+# just shorten the feedback loop for the cheap checks.
+#
+# To run all hooks against the whole repo on demand: `pre-commit run --all-files`
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+        # The Jellyfin plugin's build.yaml uses non-standard tags ignored elsewhere; keep default.
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
+    hooks:
+      - id: ruff-check
+        # Match the CI invocation — only lint sidecar/, not the .venv or fixtures.
+        files: ^sidecar/
+        # ruff-format intentionally not enabled — adopting it would require a
+        # one-shot reformat-the-world commit. Decide separately.
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
+    hooks:
+      - id: actionlint
+        # Only fires when a workflow file is actually staged.
+        files: ^\.github/workflows/.*\.ya?ml$
+
+  # Pytest runs on `git push` only — too slow for every commit once the suite grows.
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest (sidecar)
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        types_or: [python, toml]
