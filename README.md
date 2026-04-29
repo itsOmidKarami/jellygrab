@@ -52,9 +52,9 @@ jellygrab/
 1. Copy `.env.example` to `.env` and fill in `JELLYFIN_URL`, `JELLYFIN_API_KEY`,
    `DOWNLOAD_DIR`, and any scraper-specific values you need
 2. `docker compose up -d`
-3. Install the plugin DLL into Jellyfin (see
-   [jellyfin-plugin/README.md](jellyfin-plugin/README.md))
-4. In Jellyfin: Dashboard → Plugins → JellyGrab → set the sidecar URL
+3. Install the plugin via the Jellyfin catalog (recommended) or manually — see
+   [jellyfin-plugin/README.md](jellyfin-plugin/README.md)
+4. In Jellyfin: Dashboard → Plugins → My Plugins → JellyGrab → set the sidecar URL
 
 ## Included Scrapers
 
