@@ -274,8 +274,9 @@
       const inLib = h.in_library
         ? '<span style="background:rgba(76,175,80,0.18);color:#4caf50;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">In library</span>'
         : "";
+      // padding-bottom:150% gives a 2:3 ratio without aspect-ratio (unsupported on older WebOS WebKit).
       card.innerHTML =
-        '<div style="aspect-ratio:2/3;' + poster + '"></div>' +
+        '<div style="width:100%;height:0;padding-bottom:150%;' + poster + '"></div>' +
         '<div style="padding:10px;display:flex;flex-direction:column;gap:6px;">' +
           '<div style="font-weight:600;font-size:13px;">' + escapeHtml(h.title) + '</div>' +
           '<div style="font-size:11px;color:#8a98a8;">' + (h.year ? escapeHtml(h.year) + ' · ' : '') + escapeHtml(h.kind || "") + ' ' + inLib + '</div>' +
