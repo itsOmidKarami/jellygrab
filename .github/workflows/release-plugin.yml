@@ -1,0 +1,142 @@
+name: Release plugin
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to (re)release, e.g. v0.1.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release ${{ github.ref_name }} (Jellyfin ${{ matrix.jellyfin }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Mirror build-plugin.yml — keep these in sync.
+        include:
+          - jellyfin: "10.11.8"
+            dotnet: "9.0.x"
+            target_abi: "10.11.0.0"
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "assembly_version=${VERSION}.0" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet }}
+
+      - name: Restore
+        working-directory: jellyfin-plugin
+        run: dotnet restore -p:JellyfinVersion=${{ matrix.jellyfin }}
+
+      - name: Build
+        working-directory: jellyfin-plugin
+        run: |
+          dotnet build -c Release --no-restore \
+            -p:JellyfinVersion=${{ matrix.jellyfin }} \
+            -p:Version=${{ steps.tag.outputs.version }} \
+            -p:AssemblyVersion=${{ steps.tag.outputs.assembly_version }} \
+            -p:FileVersion=${{ steps.tag.outputs.assembly_version }}
+
+      - name: Publish
+        working-directory: jellyfin-plugin
+        run: |
+          dotnet publish -c Release --no-build \
+            -p:JellyfinVersion=${{ matrix.jellyfin }} \
+            -p:Version=${{ steps.tag.outputs.version }} \
+            -p:AssemblyVersion=${{ steps.tag.outputs.assembly_version }} \
+            -p:FileVersion=${{ steps.tag.outputs.assembly_version }} \
+            -o publish
+
+      - name: Verify DLL produced
+        working-directory: jellyfin-plugin
+        run: test -f publish/Jellyfin.Plugin.JellyGrab.dll
+
+      - name: Package
+        id: pkg
+        working-directory: jellyfin-plugin
+        run: |
+          ZIP_NAME="jellygrab-jellyfin-${{ matrix.jellyfin }}.zip"
+          (cd publish && zip -j "../$ZIP_NAME" Jellyfin.Plugin.JellyGrab.dll)
+          CHECKSUM=$(md5sum "$ZIP_NAME" | awk '{print $1}')
+          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
+          echo "zip_path=jellyfin-plugin/$ZIP_NAME" >> "$GITHUB_OUTPUT"
+          echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          files: ${{ steps.pkg.outputs.zip_path }}
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+
+      - name: Update manifest.json on main
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          VERSION: ${{ steps.tag.outputs.assembly_version }}
+          TARGET_ABI: ${{ matrix.target_abi }}
+          ZIP_NAME: ${{ steps.pkg.outputs.zip_name }}
+          CHECKSUM: ${{ steps.pkg.outputs.checksum }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          SOURCE_URL="https://github.com/${REPO}/releases/download/${TAG}/${ZIP_NAME}"
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          MANIFEST=jellyfin-plugin/manifest.json
+
+          # Prepend (or replace if same version) entry in versions[].
+          tmp=$(mktemp)
+          jq --arg version "$VERSION" \
+             --arg targetAbi "$TARGET_ABI" \
+             --arg sourceUrl "$SOURCE_URL" \
+             --arg checksum "$CHECKSUM" \
+             --arg timestamp "$TIMESTAMP" \
+             --arg changelog "Release $TAG" '
+            .[0].versions = (
+              [{
+                version: $version,
+                changelog: $changelog,
+                targetAbi: $targetAbi,
+                sourceUrl: $sourceUrl,
+                checksum: $checksum,
+                timestamp: $timestamp
+              }] + ((.[0].versions // []) | map(select(.version != $version)))
+            )
+          ' "$MANIFEST" > "$tmp"
+          mv "$tmp" "$MANIFEST"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$MANIFEST"
+          if git diff --cached --quiet; then
+            echo "manifest.json unchanged — nothing to commit"
+            exit 0
+          fi
+          git commit -m "Publish JellyGrab ${TAG} to manifest [skip ci]"
+          git push origin HEAD:main
