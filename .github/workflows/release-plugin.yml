@@ -35,9 +35,11 @@ jobs:
             TAG="${{ github.ref_name }}"
           fi
           VERSION="${TAG#v}"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "assembly_version=${VERSION}.0" >> "$GITHUB_OUTPUT"
+          {
+            echo "tag=$TAG"
+            echo "version=$VERSION"
+            echo "assembly_version=${VERSION}.0"
+          } >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
@@ -83,9 +85,11 @@ jobs:
           ZIP_NAME="jellygrab-jellyfin-${{ matrix.jellyfin }}.zip"
           (cd publish && zip -j "../$ZIP_NAME" Jellyfin.Plugin.JellyGrab.dll)
           CHECKSUM=$(md5sum "$ZIP_NAME" | awk '{print $1}')
-          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
-          echo "zip_path=jellyfin-plugin/$ZIP_NAME" >> "$GITHUB_OUTPUT"
-          echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
+          {
+            echo "zip_name=$ZIP_NAME"
+            echo "zip_path=jellyfin-plugin/$ZIP_NAME"
+            echo "checksum=$CHECKSUM"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create / update GitHub Release
         uses: softprops/action-gh-release@v2
