@@ -1,0 +1,120 @@
+name: Update release manifest
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - ".release-please-manifest.json"
+      - "CHANGELOG.md"
+      - "jellyfin-plugin/**"
+      - ".github/workflows/update-release-manifest.yml"
+      - "scripts/package-plugin.sh"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  update:
+    name: Add plugin catalog entries
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.title, 'chore(main): release ')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-manifest-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Resolve release version
+        id: release
+        run: |
+          VERSION=$(jq -r '."."' .release-please-manifest.json)
+          if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+            echo "Could not read root package version from .release-please-manifest.json" >&2
+            exit 1
+          fi
+          {
+            echo "version=$VERSION"
+            echo "assembly_version=$VERSION.0"
+            echo "tag=v$VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build deterministic plugin packages
+        id: packages
+        run: |
+          mkdir -p artifacts
+          scripts/package-plugin.sh 10.10.7 net8.0 "${{ steps.release.outputs.version }}" artifacts
+          scripts/package-plugin.sh 10.11.8 net9.0 "${{ steps.release.outputs.version }}" artifacts
+          ZIP_1010="$PWD/artifacts/jellygrab-jellyfin-10.10.7.zip"
+          ZIP_1011="$PWD/artifacts/jellygrab-jellyfin-10.11.8.zip"
+          {
+            echo "zip_1010=$ZIP_1010"
+            echo "zip_1011=$ZIP_1011"
+            echo "md5_1010=$(md5sum "$ZIP_1010" | awk '{print $1}')"
+            echo "md5_1011=$(md5sum "$ZIP_1011" | awk '{print $1}')"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update plugin manifest
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.assembly_version }}
+          MD5_1010: ${{ steps.packages.outputs.md5_1010 }}
+          MD5_1011: ${{ steps.packages.outputs.md5_1011 }}
+        run: |
+          set -euo pipefail
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          tmp=$(mktemp)
+          jq --arg version "$VERSION" \
+             --arg changelog "Release $TAG" \
+             --arg timestamp "$TIMESTAMP" \
+             --arg source1010 "https://github.com/${REPO}/releases/download/${TAG}/jellygrab-jellyfin-10.10.7.zip" \
+             --arg source1011 "https://github.com/${REPO}/releases/download/${TAG}/jellygrab-jellyfin-10.11.8.zip" \
+             --arg md5_1010 "$MD5_1010" \
+             --arg md5_1011 "$MD5_1011" '
+            .[0].versions = (
+              [
+                {
+                  version: $version,
+                  changelog: $changelog,
+                  targetAbi: "10.11.0.0",
+                  sourceUrl: $source1011,
+                  checksum: $md5_1011,
+                  timestamp: $timestamp
+                },
+                {
+                  version: $version,
+                  changelog: $changelog,
+                  targetAbi: "10.10.0.0",
+                  sourceUrl: $source1010,
+                  checksum: $md5_1010,
+                  timestamp: $timestamp
+                }
+              ] + ((.[0].versions // []) | map(select(.version != $version)))
+            )
+          ' jellyfin-plugin/manifest.json > "$tmp"
+          mv "$tmp" jellyfin-plugin/manifest.json
+
+      - name: Commit manifest update
+        run: |
+          if git diff --quiet -- jellyfin-plugin/manifest.json; then
+            echo "Manifest is already up to date."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add jellyfin-plugin/manifest.json
+          git commit -m "chore: update manifest for ${{ steps.release.outputs.tag }}"
+          git push

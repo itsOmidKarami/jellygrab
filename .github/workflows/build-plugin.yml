@@ -48,18 +48,29 @@ jobs:
         run: dotnet restore -p:JellyfinVersion=${{ matrix.jellyfin }} -p:TargetFramework=${{ matrix.target_framework }}
 
       - name: Build
-        run: dotnet build -c Release --no-restore -p:JellyfinVersion=${{ matrix.jellyfin }} -p:TargetFramework=${{ matrix.target_framework }}
+        run: |
+          dotnet build -c Release --no-restore \
+            -p:JellyfinVersion=${{ matrix.jellyfin }} \
+            -p:TargetFramework=${{ matrix.target_framework }} \
+            -p:ContinuousIntegrationBuild=true \
+            -p:Deterministic=true
 
       - name: Publish
-        run: dotnet publish -c Release --no-build -p:JellyfinVersion=${{ matrix.jellyfin }} -p:TargetFramework=${{ matrix.target_framework }} -o publish
+        run: |
+          dotnet publish -c Release --no-build \
+            -p:JellyfinVersion=${{ matrix.jellyfin }} \
+            -p:TargetFramework=${{ matrix.target_framework }} \
+            -p:ContinuousIntegrationBuild=true \
+            -p:Deterministic=true \
+            -o publish
 
       - name: Verify DLL produced
         run: test -f publish/Jellyfin.Plugin.JellyGrab.dll
 
       - name: Package
         run: |
-          cd publish
-          zip -j "../jellygrab-jellyfin-${{ matrix.jellyfin }}.zip" Jellyfin.Plugin.JellyGrab.dll
+          touch -t 198001010000.00 publish/Jellyfin.Plugin.JellyGrab.dll
+          (cd publish && TZ=UTC zip -X -j "../jellygrab-jellyfin-${{ matrix.jellyfin }}.zip" Jellyfin.Plugin.JellyGrab.dll)
 
       - uses: actions/upload-artifact@v4
         with:

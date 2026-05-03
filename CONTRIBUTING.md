@@ -46,12 +46,20 @@ checks have passed.
 
 ## Releases
 
-Releases are intentionally manual. Release workflows may generate manifest PRs
-for plugin catalog updates, but those PRs still need CODEOWNER approval before
-auto-merge can complete. If the PR author is GitHub Actions or the sole
-maintainer, a repository admin may use the ruleset bypass after verifying the
-required checks. Do not add a maintainer PAT or bot bypass for release
-automation.
+Releases use `release-please` and should require one reviewed release PR:
+
+1. Merge one or more conventional commits to `main` (`fix:`, `feat:`, etc.).
+2. `release-please` opens a `chore(main): release X.Y.Z` PR.
+3. The release PR workflow builds deterministic plugin zips, computes catalog
+   checksums, and commits the `jellyfin-plugin/manifest.json` entries into
+   that same release PR.
+4. After the release PR is merged, the `vX.Y.Z` tag publishes plugin assets and
+   the sidecar image. Tag workflows should not create follow-up manifest PRs.
+
+For this to work, the repository setting **Actions → General → Workflow
+permissions → Allow GitHub Actions to create and approve pull requests** must
+be enabled. CODEOWNER review is still required before merging the generated
+release PR.
 
 ## Pre-commit hooks (recommended)
 
