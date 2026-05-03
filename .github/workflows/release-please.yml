@@ -12,6 +12,8 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
+      # Requires repository setting:
+      # Actions > General > Workflow permissions > Allow GitHub Actions to create and approve pull requests.
       - uses: googleapis/release-please-action@v4
         with:
           config-file: release-please-config.json
