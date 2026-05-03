@@ -165,23 +165,24 @@ jobs:
           git push origin "$BRANCH"
 
           PR_URL=$(gh pr create \
-            --title "chore: update manifest for ${TAG} (Jellyfin ${JELLYFIN}) [skip ci]" \
+            --title "chore: update manifest for ${TAG} (Jellyfin ${JELLYFIN})" \
             --body "Automated manifest update for release ${TAG}." \
             --base main \
             --head "$BRANCH")
 
           gh pr merge "$PR_URL" --auto --squash
 
-          # Wait for the PR to merge before the next matrix row starts (max-parallel: 1
-          # ensures sequential execution, but we must not exit before merge completes).
-          for i in $(seq 1 36); do
+          # Wait for the PR to merge before the next matrix row starts. CODEOWNER
+          # approval is intentionally required, so manual releases include a
+          # human approval step while auto-merge handles the rest.
+          for i in $(seq 1 180); do
             STATE=$(gh pr view "$PR_URL" --json state --jq '.state')
             if [ "$STATE" = "MERGED" ]; then
               echo "PR merged."
               exit 0
             fi
-            echo "Waiting for merge... attempt $i/36"
+            echo "Waiting for CODEOWNER approval and merge... attempt $i/180"
             sleep 10
           done
-          echo "Timed out waiting for manifest PR to merge." >&2
+          echo "Timed out waiting for manifest PR to merge. Approve/merge the manifest PR manually, then rerun this job if needed." >&2
           exit 1
