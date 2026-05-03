@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -15,6 +16,8 @@ from jellyfin_client import jellyfin
 from job_queue import queue
 from session_state import status as session_status
 from version import API_VERSION, BUILD_VERSION
+
+log = logging.getLogger("jellygrab.api")
 
 
 def _ensure_cookies_file() -> None:
@@ -222,8 +225,9 @@ async def api_keepalive_run() -> dict:
     """Force a fresh keepalive ping right now (don't wait for the next interval)."""
     try:
         await keepalive._ping_once()
-    except Exception as exc:
-        return {"ok": False, "error": str(exc), "status": session_status.to_dict()}
+    except Exception:
+        log.exception("manual keepalive check failed")
+        return {"ok": False, "error": "keepalive check failed", "status": session_status.to_dict()}
     return {"ok": True, "status": session_status.to_dict()}
 
 
