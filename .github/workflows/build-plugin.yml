@@ -10,6 +10,7 @@ on:
     paths:
       - "jellyfin-plugin/**"
       - ".github/workflows/build-plugin.yml"
+      - "scripts/package-plugin.sh"
   workflow_dispatch:
 
 permissions:
