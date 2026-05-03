@@ -1,0 +1,5 @@
+[general]
+contrib = CC1
+
+[title-max-length]
+line-length = 100

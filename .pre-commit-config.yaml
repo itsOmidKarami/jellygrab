@@ -33,6 +33,12 @@ repos:
         # Only fires when a workflow file is actually staged.
         files: ^\.github/workflows/.*\.ya?ml$
 
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint
+        stages: [commit-msg]
+
   # Pytest runs on `git push` only — too slow for every commit once the suite grows.
   - repo: local
     hooks:

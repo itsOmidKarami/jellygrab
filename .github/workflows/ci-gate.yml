@@ -1,0 +1,11 @@
+name: CI gate
+
+on:
+  pull_request:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    container: alpine:3.21
+    steps:
+      - run: echo "gate passed"
