@@ -9,6 +9,53 @@ permissions:
 jobs:
   gate:
     runs-on: ubuntu-latest
-    container: alpine:3.21
     steps:
-      - run: echo "gate passed"
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install Python dependencies
+        run: uv sync --group dev
+
+      - name: Ruff lint
+        run: uv run ruff check sidecar
+
+      - name: Compile Python
+        run: uv run python -m compileall -q sidecar
+
+      - name: Pytest
+        run: uv run pytest
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2
+        with:
+          fail-on-error: true
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Restore plugin for Jellyfin 10.10
+        working-directory: jellyfin-plugin
+        run: dotnet restore -p:JellyfinVersion=10.10.7 -p:TargetFramework=net8.0
+
+      - name: Build plugin for Jellyfin 10.10
+        working-directory: jellyfin-plugin
+        run: dotnet build -c Release --no-restore -p:JellyfinVersion=10.10.7 -p:TargetFramework=net8.0
+
+      - name: Restore plugin for Jellyfin 10.11
+        working-directory: jellyfin-plugin
+        run: dotnet restore -p:JellyfinVersion=10.11.8 -p:TargetFramework=net9.0
+
+      - name: Build plugin for Jellyfin 10.11
+        working-directory: jellyfin-plugin
+        run: dotnet build -c Release --no-restore -p:JellyfinVersion=10.11.8 -p:TargetFramework=net9.0

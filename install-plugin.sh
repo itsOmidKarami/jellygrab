@@ -7,7 +7,12 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 SRC="jellyfin-plugin/bin/Release/net9.0/publish/Jellyfin.Plugin.JellyGrab.dll"
-DST_DIR="jellyfin/config/plugins/JellyGrab_0.2.0"
+VERSION="$(sed -n 's:.*<AssemblyVersion>\(.*\)</AssemblyVersion>.*:\1:p' jellyfin-plugin/Jellyfin.Plugin.JellyGrab.csproj | head -n 1)"
+if [[ -z "$VERSION" ]]; then
+  echo "Could not read AssemblyVersion from jellyfin-plugin/Jellyfin.Plugin.JellyGrab.csproj" >&2
+  exit 1
+fi
+DST_DIR="jellyfin/config/plugins/JellyGrab_${VERSION}"
 
 if [[ ! -f "$SRC" ]]; then
   echo "Plugin DLL not found at $SRC" >&2

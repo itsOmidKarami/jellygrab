@@ -7,7 +7,8 @@ puts a "Search the web" button into Jellyfin's built-in search view.
 ## Install (manual)
 
 1. Build the plugin (see "Build" below) or download a release zip.
-2. Create a folder `JellyGrab_0.1.0.0/` under your Jellyfin
+2. Create a folder named for the plugin assembly version, for example
+   `JellyGrab_0.2.3.0/`, under your Jellyfin
    `config/plugins/` directory and drop the published DLL inside.
 3. Restart Jellyfin.
 4. Dashboard → Plugins → My Plugins → JellyGrab → set the Sidecar URL.

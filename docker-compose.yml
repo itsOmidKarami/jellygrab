@@ -9,7 +9,7 @@ services:
       - ./jellyfin/config:/config
       - ./jellyfin/cache:/cache
       - ${HOST_MEDIA_DIR:-./media}:/media
-      # JellyGrab plugin DLL is copied into ./jellyfin/config/plugins/JellyGrab_0.1.0/
+      # JellyGrab plugin DLL is copied into ./jellyfin/config/plugins/JellyGrab_<version>/
       # by ./install-plugin.sh and picked up via the /config bind-mount above.
     networks:
       - jellygrab-net
