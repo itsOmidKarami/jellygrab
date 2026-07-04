@@ -26,12 +26,12 @@ jobs:
       group: release-manifest-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             8.0.x
