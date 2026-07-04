@@ -5,6 +5,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
@@ -14,7 +15,17 @@ jobs:
     steps:
       # Requires repository setting:
       # Actions > General > Workflow permissions > Allow GitHub Actions to create and approve pull requests.
-      - uses: googleapis/release-please-action@v4
+      - id: release
+        uses: googleapis/release-please-action@v4
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      - name: Publish release artifacts
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          gh workflow run release-plugin.yml --ref "$TAG" -f tag="$TAG"
+          gh workflow run release-sidecar.yml --ref "$TAG" -f tag="$TAG"

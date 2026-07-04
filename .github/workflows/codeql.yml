@@ -17,36 +17,14 @@ jobs:
     name: Analyze C#
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: |
-            8.0.x
-            9.0.x
+      - uses: actions/checkout@v7
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: csharp
-          build-mode: manual
+          build-mode: none
           dependency-caching: true
-
-      - name: Restore plugin for Jellyfin 10.10
-        working-directory: jellyfin-plugin
-        run: dotnet restore -p:JellyfinVersion=10.10.7 -p:TargetFramework=net8.0
-
-      - name: Build plugin for Jellyfin 10.10
-        working-directory: jellyfin-plugin
-        run: dotnet build -c Release --no-restore -p:JellyfinVersion=10.10.7 -p:TargetFramework=net8.0
-
-      - name: Restore plugin for Jellyfin 10.11
-        working-directory: jellyfin-plugin
-        run: dotnet restore -p:JellyfinVersion=10.11.8 -p:TargetFramework=net9.0
-
-      - name: Build plugin for Jellyfin 10.11
-        working-directory: jellyfin-plugin
-        run: dotnet build -c Release --no-restore -p:JellyfinVersion=10.11.8 -p:TargetFramework=net9.0
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
@@ -57,7 +35,7 @@ jobs:
     name: Analyze Python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
