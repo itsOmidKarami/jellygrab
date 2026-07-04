@@ -73,7 +73,7 @@ jobs:
           touch -t 198001010000.00 publish/Jellyfin.Plugin.JellyGrab.dll
           (cd publish && TZ=UTC zip -X -j "../jellygrab-jellyfin-${{ matrix.jellyfin }}.zip" Jellyfin.Plugin.JellyGrab.dll)
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: jellygrab-jellyfin-${{ matrix.jellyfin }}
           path: jellyfin-plugin/jellygrab-jellyfin-${{ matrix.jellyfin }}.zip
