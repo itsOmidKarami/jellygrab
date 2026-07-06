@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.6...v0.2.7) (2026-07-06)
+
+
+### Bug Fixes
+
+* dispatch release artifact workflows with repo ([#41](https://github.com/itsOmidKarami/jellygrab/issues/41)) ([def4715](https://github.com/itsOmidKarami/jellygrab/commit/def4715faf84d1a2dcdedaa3b52fdcef61cc60e3))
+
 ## [0.2.6](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.5...v0.2.6) (2026-07-06)
 
 
