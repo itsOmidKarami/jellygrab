@@ -27,5 +27,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag_name }}
         run: |
-          gh workflow run release-plugin.yml --ref "$TAG" -f tag="$TAG"
-          gh workflow run release-sidecar.yml --ref "$TAG" -f tag="$TAG"
+          gh workflow run release-plugin.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG" -f tag="$TAG"
+          gh workflow run release-sidecar.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG" -f tag="$TAG"
