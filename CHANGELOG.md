@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.8](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.7...v0.2.8) (2026-07-14)
+
+
+### Bug Fixes
+
+* **deps:** bump soupsieve in the uv group across 1 directory ([#43](https://github.com/itsOmidKarami/jellygrab/issues/43)) ([4c64cd7](https://github.com/itsOmidKarami/jellygrab/commit/4c64cd7c7fdb5c4f9f72eb38e3a172e202eb921a))
+* **deps:** update uvicorn[standard] requirement ([#45](https://github.com/itsOmidKarami/jellygrab/issues/45)) ([39cb7e1](https://github.com/itsOmidKarami/jellygrab/commit/39cb7e1cd01fa7fbcf2c4b9f188d2cb7058d7dda))
+
 ## [0.2.7](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.6...v0.2.7) (2026-07-06)
 
 
