@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.9](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.8...v0.2.9) (2026-07-21)
+
+
+### Bug Fixes
+
+* **deps:** bump fastapi from 0.139.0 to 0.139.2 ([#47](https://github.com/itsOmidKarami/jellygrab/issues/47)) ([c8e7265](https://github.com/itsOmidKarami/jellygrab/commit/c8e7265af450c025dfe3a429bb23cf09d097b818))
+* **release:** make plugin manifests reproducible ([#50](https://github.com/itsOmidKarami/jellygrab/issues/50)) ([4801082](https://github.com/itsOmidKarami/jellygrab/commit/48010828fc353c73a26e8c78d2189c9a2bbacd33))
+* **release:** remove SourceLink checksum drift ([#51](https://github.com/itsOmidKarami/jellygrab/issues/51)) ([79ac4b7](https://github.com/itsOmidKarami/jellygrab/commit/79ac4b76a59380e179d09d0327b14fd85ac4baec))
+
 ## [0.2.8](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.7...v0.2.8) (2026-07-14)
 
 
