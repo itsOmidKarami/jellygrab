@@ -75,7 +75,7 @@ jobs:
           MD5_1011: ${{ steps.packages.outputs.md5_1011 }}
         run: |
           set -euo pipefail
-          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          TIMESTAMP="${{ github.event.pull_request.created_at }}"
           tmp=$(mktemp)
           jq --arg version "$VERSION" \
              --arg changelog "Release $TAG" \
