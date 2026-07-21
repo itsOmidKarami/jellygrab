@@ -5,12 +5,17 @@ from xml.etree import ElementTree
 ROOT = Path(__file__).parents[2]
 
 
-def test_plugin_builds_exclude_the_git_revision():
+def test_plugin_builds_exclude_git_dependent_metadata():
     project = ElementTree.parse(ROOT / "jellyfin-plugin/Jellyfin.Plugin.JellyGrab.csproj")
 
-    values = project.findall(".//IncludeSourceRevisionInInformationalVersion")
+    revision_settings = project.findall(".//IncludeSourceRevisionInInformationalVersion")
+    debug_settings = project.findall(".//DebugType")
 
-    assert [value.text for value in values] == ["false"]
+    assert [setting.text for setting in revision_settings] == ["false"]
+    assert [setting.text for setting in debug_settings] == ["none"]
+    assert [setting.get("Condition") for setting in debug_settings] == [
+        "'$(Configuration)' == 'Release'"
+    ]
 
 
 def test_release_manifest_timestamp_comes_from_the_pull_request():
