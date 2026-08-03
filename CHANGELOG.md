@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.10](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.9...v0.2.10) (2026-08-03)
+
+
+### Bug Fixes
+
+* adopt useful Ruff rules ([#58](https://github.com/itsOmidKarami/jellygrab/issues/58)) ([7bf5dea](https://github.com/itsOmidKarami/jellygrab/commit/7bf5dea42d69d821c7c6ccb3e40b18f89e45caab))
+* **deps:** bump fastapi from 0.139.2 to 0.140.0 ([#52](https://github.com/itsOmidKarami/jellygrab/issues/52)) ([2ae3789](https://github.com/itsOmidKarami/jellygrab/commit/2ae37895f6b6c589b5a03097d4306df0c43663dc))
+* **deps:** bump fastapi from 0.140.0 to 0.141.1 ([#56](https://github.com/itsOmidKarami/jellygrab/issues/56)) ([8459ed9](https://github.com/itsOmidKarami/jellygrab/commit/8459ed931420aafc0ed60235b66a2d5720d52db1))
+* **deps:** update uvicorn[standard] requirement ([#57](https://github.com/itsOmidKarami/jellygrab/issues/57)) ([037076b](https://github.com/itsOmidKarami/jellygrab/commit/037076bf82a9dac6cff8dccf3eee36649d9ee686))
+
 ## [0.2.9](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.8...v0.2.9) (2026-07-21)
 
 
