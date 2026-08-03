@@ -1,6 +1,5 @@
-from fastapi.testclient import TestClient
-
 import keepalive
+from fastapi.testclient import TestClient
 from main import app
 
 

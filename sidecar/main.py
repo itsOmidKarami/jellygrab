@@ -3,17 +3,16 @@ import json
 import logging
 from contextlib import asynccontextmanager
 
+import downloader
+import keepalive
+from config import settings
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-
-import downloader
-import keepalive
-from scrapers import nama as scraper
-from config import settings
 from jellyfin_client import jellyfin
 from job_queue import queue
+from pydantic import BaseModel
+from scrapers import nama as scraper
 from session_state import status as session_status
 from version import API_VERSION, BUILD_VERSION
 
@@ -93,9 +92,7 @@ def _is_library_match(hit_title: str, hit_year: str | None, item: dict) -> bool:
     if _norm_title(hit_title) != _norm_title(item.get("Name", "")):
         return False
     item_year = item.get("ProductionYear")
-    if hit_year and item_year and str(item_year) != str(hit_year):
-        return False
-    return True
+    return not (hit_year and item_year and str(item_year) != str(hit_year))
 
 
 @app.get("/api/search")
@@ -107,7 +104,7 @@ async def api_search(q: str) -> list[dict]:
     for r in results:
         try:
             candidates = await jellyfin.search_library(r.title)
-        except Exception:
+        except Exception:  # noqa: BLE001
             candidates = []
         matches = [c for c in candidates if _is_library_match(r.title, r.year, c)]
         hits.append(

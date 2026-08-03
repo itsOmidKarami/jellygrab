@@ -42,8 +42,8 @@ def get_user_agent() -> str:
             ua = p.read_text().strip()
             if ua:
                 return ua
-        except Exception:
-            pass
+        except (OSError, UnicodeError) as exc:
+            log.warning("nama session: could not read user-agent file %s: %s", p, exc)
     return settings.nama_user_agent
 
 
@@ -68,7 +68,8 @@ def merge_cookies(fresh: dict[str, str]) -> dict[str, str]:
     if target.exists():
         try:
             existing = json.loads(target.read_text())
-        except Exception:
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            log.warning("nama session: could not read cookie file %s: %s", target, exc)
             existing = {}
     merged = {**existing, **fresh}
     if merged != existing:

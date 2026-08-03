@@ -6,9 +6,15 @@ the contract between 30nama's response shapes and our SearchResult /
 DownloadOption dataclasses, so a future change to those shapes fails CI
 loudly instead of silently returning empty results.
 """
+from dataclasses import replace
+from pathlib import Path
+
+import pytest
+from config import settings
 from scrapers.nama.scraper import (
     DownloadOption,
     SearchResult,
+    _cookie_jar,
     _extract_item_id,
     _extract_item_id_from_url,
     _parse_fs_json,
@@ -17,6 +23,25 @@ from scrapers.nama.scraper import (
     _parse_series_packs,
     _quality_from_url,
 )
+
+
+def test_cookie_jar_propagates_unexpected_cookie_file_read_errors(monkeypatch, tmp_path):
+    cookie_path = tmp_path / "cookies.json"
+    cookie_path.write_text("{}")
+    monkeypatch.setattr(
+        "scrapers.nama.scraper.settings", replace(settings, nama_cookies_file=cookie_path)
+    )
+
+    def fail_read(_: Path) -> str:
+        raise RuntimeError("unexpected")
+
+    monkeypatch.setattr(Path, "read_text", fail_read)
+    _cookie_jar.cache_clear()
+    try:
+        with pytest.raises(RuntimeError, match="unexpected"):
+            _cookie_jar()
+    finally:
+        _cookie_jar.cache_clear()
 
 
 class TestQualityFromUrl:
