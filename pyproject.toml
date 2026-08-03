@@ -28,6 +28,9 @@ package = false
 line-length = 110
 target-version = "py312"
 
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "BLE001", "S110", "RUF022", "RET501", "SIM103"]
+
 [tool.ruff.lint.per-file-ignores]
 # scraper.py configures its module-level logger before importing the heavy
 # curl_cffi / flaresolverr modules so that any logging triggered by their

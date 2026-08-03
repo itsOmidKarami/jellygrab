@@ -24,7 +24,6 @@ import logging
 from typing import Any
 
 import httpx
-
 from config import settings
 
 log = logging.getLogger("jellygrab.flaresolverr")
@@ -80,7 +79,7 @@ async def reset_session() -> None:
     async with _session_lock:
         try:
             await _post({"cmd": "sessions.destroy", "session": settings.flaresolverr_session})
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             log.warning("flaresolverr: sessions.destroy failed (continuing): %s", exc)
         _session_ready = False
     await _ensure_session()

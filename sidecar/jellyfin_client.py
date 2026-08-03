@@ -1,5 +1,4 @@
 import httpx
-
 from config import settings
 
 
