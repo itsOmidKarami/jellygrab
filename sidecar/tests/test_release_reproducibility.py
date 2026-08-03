@@ -1,7 +1,6 @@
 from pathlib import Path
 from xml.etree import ElementTree
 
-
 ROOT = Path(__file__).parents[2]
 
 

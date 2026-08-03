@@ -9,6 +9,7 @@ the curl_cffi downloader can keep using them for the actual `.mkv` fetch.
 import json
 import logging
 import re
+from contextlib import suppress
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -22,11 +23,11 @@ if not log.handlers:
     log.addHandler(_h)
     log.propagate = False
 
+from config import settings
 from curl_cffi.requests import AsyncSession
 
 from . import flaresolverr as fs
 from . import session as nama_session
-from config import settings
 
 
 @dataclass
@@ -66,8 +67,10 @@ def _cookie_jar() -> dict[str, str]:
         try:
             data = json.loads(settings.nama_cookies_file.read_text())
             jar.update({str(k): str(v) for k, v in data.items()})
-        except Exception:
-            pass
+        except (OSError, UnicodeError) as exc:
+            log.warning("scraper: could not read cookie file %s: %s", settings.nama_cookies_file, exc)
+        except (json.JSONDecodeError, AttributeError) as exc:
+            log.warning("scraper: invalid cookie file %s: %s", settings.nama_cookies_file, exc)
     if settings.nama_cookie:
         for part in settings.nama_cookie.split(";"):
             if "=" in part:
@@ -115,7 +118,7 @@ def _interface_user_token() -> str:
     try:
         data = json.loads(unquote(raw))
         return str(data.get("usertoken") or "")
-    except Exception:
+    except (json.JSONDecodeError, AttributeError):
         return ""
 
 
@@ -205,7 +208,7 @@ def _absorb(sol: dict[str, Any]) -> None:
 
 async def startup() -> None:
     """No-op kept for the lifespan handler."""
-    return None
+    pass
 
 
 async def shutdown() -> None:
@@ -432,15 +435,13 @@ def _parse_fs_json(body_text: str) -> dict | None:
     text = (body_text or "").strip()
     if not text:
         return None
-    try:
+    with suppress(json.JSONDecodeError):
         return json.loads(text)
-    except Exception:
-        pass
     m = re.search(r"<pre[^>]*>(.*?)</pre>", text, re.DOTALL)
     if m:
         try:
             return json.loads(m.group(1))
-        except Exception:
+        except json.JSONDecodeError:
             return None
     return None
 
@@ -453,7 +454,7 @@ def _dump_debug(content: str, label: str) -> None:
         path = _DEBUG_DIR / f"series-{label}-{ts}.html"
         path.write_text(content)
         log.info("series: dumped to %s", path)
-    except Exception as exc:
+    except (OSError, UnicodeError) as exc:
         log.warning("series: debug dump failed: %s", exc)
 
 

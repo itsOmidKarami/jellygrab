@@ -13,10 +13,10 @@ import logging
 import time
 from urllib.parse import unquote
 
+from config import settings
 from scrapers import nama as scraper
 from scrapers.nama import flaresolverr as fs
 from scrapers.nama import session as nama_session
-from config import settings
 from session_state import status
 
 log = logging.getLogger("jellygrab.keepalive")
@@ -37,7 +37,7 @@ def _is_logged_in(jar: dict[str, str]) -> bool | None:
     try:
         data = json.loads(unquote(raw))
         return bool(data.get("usertoken"))
-    except Exception:
+    except (json.JSONDecodeError, AttributeError):
         return None
 
 

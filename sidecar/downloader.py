@@ -3,9 +3,8 @@ import time
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from curl_cffi.requests import AsyncSession
-
 from config import settings
+from curl_cffi.requests import AsyncSession
 from jellyfin_client import jellyfin
 from job_queue import queue
 from scrapers.nama import session as nama_session
@@ -156,10 +155,10 @@ async def _run_download(job_id: str) -> None:
         await queue.update(job_id, bytes_downloaded=downloaded, state="completed", speed_bps=0.0)
         try:
             await jellyfin.refresh_library()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             # Refresh failure should not mark the download itself as failed.
             await queue.update(job_id, error=f"library refresh failed: {exc}")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         if tmp.exists():
             tmp.unlink(missing_ok=True)
         await queue.update(job_id, state="failed", error=str(exc))
