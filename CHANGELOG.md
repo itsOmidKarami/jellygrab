@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.11](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.10...v0.2.11) (2026-08-11)
+
+
+### Bug Fixes
+
+* **deps:** bump curl-cffi from 0.15.0 to 0.16.0 ([#61](https://github.com/itsOmidKarami/jellygrab/issues/61)) ([5b1d594](https://github.com/itsOmidKarami/jellygrab/commit/5b1d5943cdc2ffd6ffe4055f810f35b3c761469a))
+* **deps:** update uvicorn[standard] requirement ([#59](https://github.com/itsOmidKarami/jellygrab/issues/59)) ([de30fbe](https://github.com/itsOmidKarami/jellygrab/commit/de30fbe88c93a59a1b446f7795d438d02743876a))
+
 ## [0.2.10](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.9...v0.2.10) (2026-08-03)
 
 
