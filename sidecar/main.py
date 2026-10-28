@@ -145,13 +145,13 @@ class SeriesPackRequest(BaseModel):
 async def api_download_series_pack(req: SeriesPackRequest) -> dict:
     if not req.episodes:
         raise HTTPException(400, "episodes is required")
-    job_ids = await downloader.enqueue_series_pack(
+    job_ids, skipped = await downloader.enqueue_series_pack(
         title=req.title,
         year=req.year,
         season=req.season,
         episodes=[ep.model_dump() for ep in req.episodes],
     )
-    return {"job_ids": job_ids}
+    return {"job_ids": job_ids, "skipped": skipped}
 
 
 @app.get("/api/status/{job_id}")

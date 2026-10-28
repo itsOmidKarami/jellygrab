@@ -202,7 +202,11 @@
         method: "POST",
         body: JSON.stringify({ title, year: year || null, season: season || null, episodes }),
       });
-      btn.textContent = `Queued ${resp.job_ids ? resp.job_ids.length : episodes.length} ✓`;
+      const n = resp.job_ids ? resp.job_ids.length : episodes.length;
+      const skipped = resp.skipped || 0;
+      btn.textContent = skipped > 0
+        ? `Queued ${n}, skipped ${skipped} (already downloaded or in progress) ✓`
+        : `Queued ${n} ✓`;
       refreshJobs();
     } catch (e) {
       btn.disabled = false;

@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Literal
 
 JobState = Literal["queued", "downloading", "completed", "failed", "cancelled"]
+ACTIVE_STATES: frozenset[JobState] = frozenset({"queued", "downloading"})
 
 
 @dataclass
@@ -33,14 +34,28 @@ class JobQueue:
 
     async def create(self, title: str, url: str, target_path: str) -> JobStatus:
         async with self._lock:
-            job = JobStatus(
-                id=uuid.uuid4().hex,
-                title=title,
-                url=url,
-                target_path=target_path,
-            )
-            self._jobs[job.id] = job
-            return job
+            return self._add(title, url, target_path)
+
+    async def create_unless_active(self, title: str, url: str, target_path: str) -> JobStatus | None:
+        """Like `create`, but returns None if a queued/downloading job already
+        targets `target_path` — two jobs streaming into the same `.part` file
+        would interleave writes and corrupt it. Check and insert share the lock
+        so concurrent requests can't both slip past the check.
+        """
+        async with self._lock:
+            if any(j.target_path == target_path and j.state in ACTIVE_STATES for j in self._jobs.values()):
+                return None
+            return self._add(title, url, target_path)
+
+    def _add(self, title: str, url: str, target_path: str) -> JobStatus:
+        job = JobStatus(
+            id=uuid.uuid4().hex,
+            title=title,
+            url=url,
+            target_path=target_path,
+        )
+        self._jobs[job.id] = job
+        return job
 
     async def update(self, job_id: str, **fields) -> JobStatus | None:
         async with self._lock:

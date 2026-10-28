@@ -463,7 +463,10 @@
     })
       .then((resp) => {
         const n = resp && resp.job_ids ? resp.job_ids.length : episodes.length;
-        btn.textContent = "Queued " + n + " ✓";
+        const skipped = resp && resp.skipped ? resp.skipped : 0;
+        btn.textContent = skipped > 0
+          ? "Queued " + n + ", skipped " + skipped + " (already downloaded or in progress) ✓"
+          : "Queued " + n + " ✓";
         refreshJobs(modal);
       })
       .catch((e) => { btn.style.pointerEvents = ""; btn.style.opacity = ""; btn.textContent = "Retry"; showError(modal, e.message); });

@@ -71,11 +71,16 @@ async def enqueue_series_pack(
     year: str | None,
     season: str | int | None,
     episodes: list[dict],
-) -> list[str]:
+) -> tuple[list[str], int]:
     """Fan out one job per episode into `<tv>/<Title (Year)>/Season XX/<file>.mkv`.
 
     Files keep their original 30nama basename (which already encodes SxxExx),
     so Jellyfin's matcher slots them into the right episode without renaming.
+
+    Episodes are skipped when their target file already exists — a file only
+    lands at `target` after a successful download (`.part` is renamed on
+    completion), so existence means it's complete — or when a queued/downloading
+    job already targets it. Returns the queued job ids and the skipped count.
     """
     season_n = _season_int(season)
     season_dir_name = f"Season {season_n:02d}" if season_n is not None else "Season Unknown"
@@ -83,20 +88,27 @@ async def enqueue_series_pack(
     base.mkdir(parents=True, exist_ok=True)
 
     job_ids: list[str] = []
+    skipped = 0
     for ep in episodes:
         url = ep.get("url")
         if not url:
             continue
         target = base / _filename_from_url(url)
+        if target.exists():
+            skipped += 1
+            continue
         ep_num = _season_int(ep.get("episode"))
         if season_n is not None and ep_num is not None:
             ep_title = f"{title} S{season_n:02d}E{ep_num:02d}"
         else:
             ep_title = f"{title} (S{season or '?'}E{ep.get('episode') or '?'})"
-        job = await queue.create(title=ep_title, url=url, target_path=str(target))
+        job = await queue.create_unless_active(title=ep_title, url=url, target_path=str(target))
+        if job is None:
+            skipped += 1
+            continue
         asyncio.create_task(_run_download(job.id))
         job_ids.append(job.id)
-    return job_ids
+    return job_ids, skipped
 
 
 async def _run_download(job_id: str) -> None:
