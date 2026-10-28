@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.12](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.11...v0.2.12) (2026-10-28)
+
+
+### Bug Fixes
+
+* **deps:** bump anyio to 4.14.2 and virtualenv to 21.15.1 ([#76](https://github.com/itsOmidKarami/jellygrab/issues/76)) ([1013382](https://github.com/itsOmidKarami/jellygrab/commit/1013382328ffd33f1e784e95b4b3819ccb8bf078))
+* **deps:** bump certifi to 2026.10.23 and filelock to 4.2.4 ([#77](https://github.com/itsOmidKarami/jellygrab/issues/77)) ([3663129](https://github.com/itsOmidKarami/jellygrab/commit/3663129c4dfe3630a42a662e822874e7946b5e23))
+* **deps:** bump curl-cffi from 0.16.0 to 0.16.3 ([#71](https://github.com/itsOmidKarami/jellygrab/issues/71)) ([275e8e9](https://github.com/itsOmidKarami/jellygrab/commit/275e8e9c8488c36f1f3a428b6f1f649390f422e6))
+* **deps:** bump lxml from 6.1.1 to 6.1.3 ([#72](https://github.com/itsOmidKarami/jellygrab/issues/72)) ([91f1cc2](https://github.com/itsOmidKarami/jellygrab/commit/91f1cc2bde50e98674ecd97d83fde6f2d29fa185))
+* **deps:** bump pydantic from 2.13.4 to 2.13.5 ([#69](https://github.com/itsOmidKarami/jellygrab/issues/69)) ([69936a7](https://github.com/itsOmidKarami/jellygrab/commit/69936a7a1e592cb3ea824ed08131019d978c3de3))
+* **deps:** bump soupsieve in the uv group across 1 directory ([#73](https://github.com/itsOmidKarami/jellygrab/issues/73)) ([e09a74a](https://github.com/itsOmidKarami/jellygrab/commit/e09a74a05a59eabc93e0ea4016ad877270f9243b))
+* **sidecar:** skip downloaded and in-flight episodes in series pack ([#74](https://github.com/itsOmidKarami/jellygrab/issues/74)) ([5cdcb53](https://github.com/itsOmidKarami/jellygrab/commit/5cdcb53215814b9c94fce9892b9033f021fb66f8))
+
 ## [0.2.11](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.10...v0.2.11) (2026-08-11)
 
 
