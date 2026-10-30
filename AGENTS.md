@@ -25,7 +25,7 @@ The 30nama scraper lives in `sidecar/scrapers/nama/`. The site structure must be
 
 ## Jellyfin API Notes
 
-- Library search: `GET /Items?searchTerm=<title>` with header `X-Emby-Token: <api_key>`
+- Library search: `GET /Items?searchTerm=<title>` with header `Authorization: MediaBrowser Token="<api_key>"` (Jellyfin 12 rejects the legacy `X-Emby-Token`)
 - Refresh: `POST /Library/Refresh` with the same header
 - The sidecar reaches Jellyfin via its Docker service name (e.g. `http://jellyfin:8096`)
 

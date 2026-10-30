@@ -6,7 +6,9 @@ class JellyfinClient:
     def __init__(self) -> None:
         self._base = settings.jellyfin_url
         self._headers = {
-            "X-Emby-Token": settings.jellyfin_api_key,
+            # Jellyfin 12 disables the legacy X-Emby-Token / api_key schemes by default;
+            # the Authorization scheme works on 10.11 and 12.
+            "Authorization": f'MediaBrowser Token="{settings.jellyfin_api_key}"',
             "Accept": "application/json",
         }
 
