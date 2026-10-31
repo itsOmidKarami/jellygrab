@@ -30,6 +30,10 @@ jobs:
             dotnet: "9.0.x"
             target_framework: "net9.0"
             target_abi: "10.11.0.0"
+          - jellyfin: "12.0.0"
+            dotnet: "10.0.x"
+            target_framework: "net10.0"
+            target_abi: "12.0.0.0"
     steps:
       - name: Resolve tag
         id: tag

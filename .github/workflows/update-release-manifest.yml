@@ -36,6 +36,7 @@ jobs:
           dotnet-version: |
             8.0.x
             9.0.x
+            10.0.x
 
       - name: Resolve release version
         id: release
@@ -57,13 +58,17 @@ jobs:
           mkdir -p artifacts
           scripts/package-plugin.sh 10.10.7 net8.0 "${{ steps.release.outputs.version }}" artifacts
           scripts/package-plugin.sh 10.11.8 net9.0 "${{ steps.release.outputs.version }}" artifacts
+          scripts/package-plugin.sh 12.0.0 net10.0 "${{ steps.release.outputs.version }}" artifacts
           ZIP_1010="$PWD/artifacts/jellygrab-jellyfin-10.10.7.zip"
           ZIP_1011="$PWD/artifacts/jellygrab-jellyfin-10.11.8.zip"
+          ZIP_1200="$PWD/artifacts/jellygrab-jellyfin-12.0.0.zip"
           {
             echo "zip_1010=$ZIP_1010"
             echo "zip_1011=$ZIP_1011"
+            echo "zip_1200=$ZIP_1200"
             echo "md5_1010=$(md5sum "$ZIP_1010" | awk '{print $1}')"
             echo "md5_1011=$(md5sum "$ZIP_1011" | awk '{print $1}')"
+            echo "md5_1200=$(md5sum "$ZIP_1200" | awk '{print $1}')"
           } >> "$GITHUB_OUTPUT"
 
       - name: Update plugin manifest
@@ -73,6 +78,7 @@ jobs:
           VERSION: ${{ steps.release.outputs.assembly_version }}
           MD5_1010: ${{ steps.packages.outputs.md5_1010 }}
           MD5_1011: ${{ steps.packages.outputs.md5_1011 }}
+          MD5_1200: ${{ steps.packages.outputs.md5_1200 }}
         run: |
           set -euo pipefail
           TIMESTAMP="${{ github.event.pull_request.created_at }}"
@@ -82,10 +88,20 @@ jobs:
              --arg timestamp "$TIMESTAMP" \
              --arg source1010 "https://github.com/${REPO}/releases/download/${TAG}/jellygrab-jellyfin-10.10.7.zip" \
              --arg source1011 "https://github.com/${REPO}/releases/download/${TAG}/jellygrab-jellyfin-10.11.8.zip" \
+             --arg source1200 "https://github.com/${REPO}/releases/download/${TAG}/jellygrab-jellyfin-12.0.0.zip" \
              --arg md5_1010 "$MD5_1010" \
-             --arg md5_1011 "$MD5_1011" '
+             --arg md5_1011 "$MD5_1011" \
+             --arg md5_1200 "$MD5_1200" '
             .[0].versions = (
               [
+                {
+                  version: $version,
+                  changelog: $changelog,
+                  targetAbi: "12.0.0.0",
+                  sourceUrl: $source1200,
+                  checksum: $md5_1200,
+                  timestamp: $timestamp
+                },
                 {
                   version: $version,
                   changelog: $changelog,

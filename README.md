@@ -73,10 +73,13 @@ shape in `sidecar/scrapers/__init__.py`, and import it from `sidecar/main.py`.
 
 ## Jellyfin Compatibility
 
-Jellyfin's plugin ABI changes between minor releases. A DLL built against
-10.11 **will not load on 10.10 or 10.12** — Jellyfin checks `targetAbi` and
-refuses the load. If you upgrade Jellyfin to a new minor version, you need a
-JellyGrab release built against that version.
+Jellyfin's plugin ABI changes between releases. A DLL built against 10.11
+**will not load on 10.10 or on 12** — Jellyfin checks `targetAbi` and refuses
+the load. Each JellyGrab release ships one build per supported ABI: 10.10
+(.NET 8), 10.11 (.NET 9) and 12 (.NET 10, loads on 12.x). Jellyfin's plugin
+catalog picks the right one for your server; if you install by hand, take the
+matching `jellygrab-jellyfin-<version>.zip`. Upgrading Jellyfin across one of
+these boundaries needs a JellyGrab release built for the new side.
 
 To rebuild for a different ABI, bump `Jellyfin.Controller` and `Jellyfin.Model`
 versions in
