@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.14](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.13...v0.2.14) (2026-10-31)
+
+
+### Features
+
+* **plugin:** ship a Jellyfin 12 (net10) build alongside 10.10 and 10.11 ([#80](https://github.com/itsOmidKarami/jellygrab/issues/80)) ([34c1e07](https://github.com/itsOmidKarami/jellygrab/commit/34c1e071644eab2dd88818ee6add0f8c810ab8f0))
+
 ## [0.2.13](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.12...v0.2.13) (2026-10-31)
 
 
