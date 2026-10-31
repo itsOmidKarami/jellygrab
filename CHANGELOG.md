@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.13](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.12...v0.2.13) (2026-10-31)
+
+
+### Bug Fixes
+
+* **sidecar:** authenticate to Jellyfin with the Authorization header ([#78](https://github.com/itsOmidKarami/jellygrab/issues/78)) ([259b870](https://github.com/itsOmidKarami/jellygrab/commit/259b87076f0e7e119a9c3253c03163ed11f1eec2))
+
 ## [0.2.12](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.11...v0.2.12) (2026-10-28)
 
 
