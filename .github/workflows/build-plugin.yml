@@ -25,7 +25,7 @@ jobs:
       matrix:
         # Add a row here when supporting a new Jellyfin minor.
         # `dotnet` and `target_framework` must match the .NET runtime Jellyfin ships with
-        # for that version (10.10.x → .NET 8, 10.11.x → .NET 9).
+        # for that version (10.10.x → .NET 8, 10.11.x → .NET 9, 12.x → .NET 10).
         include:
           - jellyfin: "10.10.7"
             dotnet: "8.0.x"
@@ -35,6 +35,10 @@ jobs:
             dotnet: "9.0.x"
             target_framework: "net9.0"
             target_abi: "10.11.0.0"
+          - jellyfin: "12.0.0"
+            dotnet: "10.0.x"
+            target_framework: "net10.0"
+            target_abi: "12.0.0.0"
     defaults:
       run:
         working-directory: jellyfin-plugin

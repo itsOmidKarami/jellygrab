@@ -36,5 +36,7 @@ you search any active scraper, see results, and queue downloads.
 
 `dotnet publish jellyfin-plugin/Jellyfin.Plugin.JellyGrab.csproj -c Release -o publish`
 
-To target a different Jellyfin minor version, pass
-`-p:JellyfinVersion=10.11.0` (or whichever).
+To target a different Jellyfin version, pass `-p:JellyfinVersion=...` together
+with the matching `-p:TargetFramework=...` (10.10 → `net8.0`, 10.11 → `net9.0`,
+12 → `net10.0`), for example
+`-p:JellyfinVersion=12.0.0 -p:TargetFramework=net10.0`.

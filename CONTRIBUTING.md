@@ -33,7 +33,7 @@ The Python side uses `ruff` with the config in `pyproject.toml`. Run
 
 - Python lint, compile, and tests
 - GitHub Actions workflow lint
-- Jellyfin plugin builds for the supported 10.10/net8 and 10.11/net9 ABIs
+- Jellyfin plugin builds for the supported 10.10/net8, 10.11/net9 and 12/net10 ABIs
 
 Other workflows may still run as path-filtered or release-specific feedback,
 but `CI gate` is the stable required check. This avoids required checks being

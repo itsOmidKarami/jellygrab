@@ -7,7 +7,7 @@ Guidance for AI coding agents and automation tools working in this repo.
 JellyGrab is a Jellyfin downloader companion: a FastAPI sidecar plus a Jellyfin plugin. Scrapers are pluggable under `sidecar/scrapers/<name>/`. One reference scraper (`sidecar/scrapers/nama/`) targets 30nama.com (a Persian-language media site).
 
 - **`sidecar/`** — Python 3.12 + FastAPI backend (the brains)
-- **`jellyfin-plugin/`** — .NET 9 Jellyfin plugin (`Jellyfin.Plugin.JellyGrab.dll`) that embeds vanilla JS/HTML as resources, serves them via `JellyGrabController`, and patches Jellyfin web's `index.html` (`InjectScriptService`) to load `inject.js` into every page
+- **`jellyfin-plugin/`** — .NET Jellyfin plugin (built per ABI: 10.10/net8, 10.11/net9, 12/net10) (`Jellyfin.Plugin.JellyGrab.dll`) that embeds vanilla JS/HTML as resources, serves them via `JellyGrabController`, and patches Jellyfin web's `index.html` (`InjectScriptService`) to load `inject.js` into every page
 
 Sidecar is deployed via `docker-compose.yml` on the same Docker network as Jellyfin. The plugin is installed into Jellyfin as a normal Jellyfin plugin (DLL drop or via the manifest in `jellyfin-plugin/manifest.json`).
 

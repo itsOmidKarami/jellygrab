@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -22,3 +23,15 @@ def test_release_manifest_timestamp_comes_from_the_pull_request():
 
     assert 'TIMESTAMP="${{ github.event.pull_request.created_at }}"' in workflow
     assert "date -u" not in workflow
+
+
+def test_plugin_abi_matrices_stay_in_sync():
+    version = re.compile(r'jellyfin: "([\d.]+)"')
+    build = version.findall((ROOT / ".github/workflows/build-plugin.yml").read_text())
+    release = version.findall((ROOT / ".github/workflows/release-plugin.yml").read_text())
+    manifest_workflow = (ROOT / ".github/workflows/update-release-manifest.yml").read_text()
+
+    assert build == release == ["10.10.7", "10.11.8", "12.0.0"]
+    for jellyfin in build:
+        assert f"scripts/package-plugin.sh {jellyfin} " in manifest_workflow
+        assert f"jellygrab-jellyfin-{jellyfin}.zip" in manifest_workflow
