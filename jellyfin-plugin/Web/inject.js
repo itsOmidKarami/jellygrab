@@ -483,6 +483,18 @@
     return n.toFixed(1) + " " + u[i];
   }
 
+  // The sidecar only bumps updated_at when bytes arrive, so a downloading job
+  // quiet for this long is stalled. Generous enough to absorb clock skew.
+  const STALL_SEC = 60;
+
+  // Time since a sidecar epoch-seconds timestamp. Clamped at 0 for clock skew.
+  function formatAge(ts) {
+    const s = Math.max(0, Math.round(Date.now() / 1000 - ts));
+    if (s < 60) return s + "s";
+    if (s < 3600) return Math.floor(s / 60) + "m";
+    return Math.floor(s / 3600) + "h " + (Math.floor(s / 60) % 60) + "m";
+  }
+
   function renderJobs(modal, jobs) {
     const root = modal.querySelector(".jn-modal-jobs");
     if (!jobs.length) {
@@ -491,8 +503,11 @@
     }
     root.innerHTML = jobs.map((j) => {
       const pct = Math.round((j.progress || 0) * 100);
-      const detail = j.state === "downloading"
+      const stalled = j.state === "downloading" && Date.now() / 1000 - j.updated_at > STALL_SEC;
+      const detail = stalled ? "stalled · no data for " + formatAge(j.updated_at)
+        : j.state === "downloading"
         ? formatBytes(j.bytes_downloaded) + (j.bytes_total ? " / " + formatBytes(j.bytes_total) : "") + " · " + pct + "%"
+        : j.state === "queued" ? "queued · waiting " + formatAge(j.created_at)
         : (j.state === "failed" ? (j.error || "failed") : (j.state === "completed" ? formatBytes(j.bytes_downloaded) : j.state));
       return '<div style="background:#1a2027;border:1px solid #2a323d;border-radius:4px;padding:10px;margin-bottom:6px;">' +
         '<div style="display:flex;justify-content:space-between;font-size:13px;"><span>' + escapeHtml(j.title) + '</span><span style="color:#8a98a8;">' + escapeHtml(j.state) + '</span></div>' +
