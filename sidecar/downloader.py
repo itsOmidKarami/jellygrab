@@ -12,6 +12,9 @@ from scrapers.nama.scraper import cookie_jar
 
 CHUNK_SIZE = 1024 * 256  # 256 KiB
 PROGRESS_THROTTLE_SEC = 0.5
+# Fail a download that receives no data for this long, so a dead connection
+# can't hold a download slot forever. No cap on total download time.
+STALL_TIMEOUT_SEC = 300
 
 # Jobs past the limit stay "queued" until a running download frees a slot.
 _slots = asyncio.Semaphore(settings.max_concurrent_downloads)
@@ -116,13 +119,21 @@ async def enqueue_series_pack(
 
 async def _run_download(job_id: str) -> None:
     async with _slots:
-        await _download(job_id)
+        completed = await _download(job_id)
+    # Refresh after releasing the slot so the next queued job can start.
+    if completed:
+        try:
+            await jellyfin.refresh_library()
+        except Exception as exc:  # noqa: BLE001
+            # Refresh failure should not mark the download itself as failed.
+            await queue.update(job_id, error=f"library refresh failed: {exc}")
 
 
-async def _download(job_id: str) -> None:
+async def _download(job_id: str) -> bool:
+    """Stream the job's file to disk. Returns True if it completed."""
     job = queue.get(job_id)
     if job is None:
-        return
+        return False
     target = Path(job.target_path)
     tmp = target.with_suffix(target.suffix + ".part")
 
@@ -145,7 +156,9 @@ async def _download(job_id: str) -> None:
                 cookies=cookie_jar(),
                 stream=True,
                 allow_redirects=True,
-                timeout=None,
+                # For streams curl_cffi treats this as a stall timeout
+                # (abort under 1 byte/s for this long), not a total limit.
+                timeout=STALL_TIMEOUT_SEC,
             )
             try:
                 if resp.status_code >= 400:
@@ -173,12 +186,9 @@ async def _download(job_id: str) -> None:
 
         tmp.replace(target)
         await queue.update(job_id, bytes_downloaded=downloaded, state="completed", speed_bps=0.0)
-        try:
-            await jellyfin.refresh_library()
-        except Exception as exc:  # noqa: BLE001
-            # Refresh failure should not mark the download itself as failed.
-            await queue.update(job_id, error=f"library refresh failed: {exc}")
+        return True
     except Exception as exc:  # noqa: BLE001
         if tmp.exists():
             tmp.unlink(missing_ok=True)
         await queue.update(job_id, state="failed", error=str(exc))
+        return False
