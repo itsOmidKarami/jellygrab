@@ -18,6 +18,18 @@
     return `${n.toFixed(1)} ${units[i]}`;
   };
 
+  // The sidecar only bumps updated_at when bytes arrive, so a downloading job
+  // quiet for this long is stalled. Generous enough to absorb clock skew.
+  const STALL_SEC = 60;
+
+  // Time since a sidecar epoch-seconds timestamp. Clamped at 0 for clock skew.
+  const formatAge = (ts) => {
+    const s = Math.max(0, Math.round(Date.now() / 1000 - ts));
+    if (s < 60) return `${s}s`;
+    if (s < 3600) return `${Math.floor(s / 60)}m`;
+    return `${Math.floor(s / 3600)}h ${Math.floor(s / 60) % 60}m`;
+  };
+
   const showError = (msg) => {
     if (!msg) { $error.hidden = true; return; }
     $error.textContent = msg;
@@ -242,8 +254,11 @@
       const pct = Math.round((job.progress || 0) * 100);
       const speed = job.speed_bps ? `${formatBytes(job.speed_bps)}/s` : "";
       const total = job.bytes_total ? ` / ${formatBytes(job.bytes_total)}` : "";
-      const detail = job.state === "downloading"
+      const stalled = job.state === "downloading" && Date.now() / 1000 - job.updated_at > STALL_SEC;
+      const detail = stalled ? `stalled · no data for ${formatAge(job.updated_at)}`
+        : job.state === "downloading"
         ? `${formatBytes(job.bytes_downloaded)}${total} · ${pct}%${speed ? " · " + speed : ""}`
+        : job.state === "queued" ? `queued · waiting ${formatAge(job.created_at)}`
         : job.state === "failed" ? (job.error || "failed")
         : job.state === "completed" ? formatBytes(job.bytes_downloaded)
         : job.state;
