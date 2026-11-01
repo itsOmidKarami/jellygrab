@@ -22,6 +22,7 @@ class Settings:
     flaresolverr_url: str
     flaresolverr_session: str
     flaresolverr_timeout_ms: int
+    max_concurrent_downloads: int
 
 
 def load_settings() -> Settings:
@@ -48,6 +49,8 @@ def load_settings() -> Settings:
         flaresolverr_url=os.getenv("FLARESOLVERR_URL", "http://flaresolverr:8191").rstrip("/"),
         flaresolverr_session=os.getenv("FLARESOLVERR_SESSION", "jellygrab"),
         flaresolverr_timeout_ms=int(os.getenv("FLARESOLVERR_TIMEOUT_MS", "60000")),
+        # 0 or less would block every download forever, so floor at 1.
+        max_concurrent_downloads=max(1, int(os.getenv("MAX_CONCURRENT_DOWNLOADS", "3"))),
     )
 
 

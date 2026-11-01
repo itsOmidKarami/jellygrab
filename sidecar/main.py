@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from jellyfin_client import jellyfin
-from job_queue import queue
+from job_queue import ACTIVE_STATES, queue
 from pydantic import BaseModel
 from scrapers import nama as scraper
 from session_state import status as session_status
@@ -165,6 +165,19 @@ async def api_status(job_id: str) -> dict:
 @app.get("/api/jobs")
 async def api_jobs() -> list[dict]:
     return [j.to_dict() for j in queue.list()]
+
+
+@app.post("/api/jobs/{job_id}/cancel")
+async def api_job_cancel(job_id: str) -> dict:
+    job = queue.get(job_id)
+    if job is None:
+        raise HTTPException(404, "job not found")
+    if job.state not in ACTIVE_STATES:
+        raise HTTPException(409, f"job is already {job.state}")
+    if not downloader.cancel(job_id):
+        # No task to cancel (should not happen); still stop showing it as active.
+        await queue.update(job_id, state="cancelled")
+    return {"id": job_id, "cancelled": True}
 
 
 @app.post("/api/jobs/clear")
