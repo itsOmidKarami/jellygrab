@@ -209,7 +209,7 @@ async def _download(job_id: str) -> bool:
         return True
     except Exception as exc:  # noqa: BLE001
         # Network errors and HTTP status failures are expected; anything else gets a traceback.
-        expected = isinstance(exc, (RequestException, RuntimeError))
+        expected = isinstance(exc, RequestException) or str(exc).startswith("HTTP ")
         log.warning("job %s failed: %s", job_id, exc, exc_info=not expected)
         if tmp.exists():
             tmp.unlink(missing_ok=True)
