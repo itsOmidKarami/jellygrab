@@ -13,6 +13,9 @@ from scrapers.nama.scraper import cookie_jar
 CHUNK_SIZE = 1024 * 256  # 256 KiB
 PROGRESS_THROTTLE_SEC = 0.5
 
+# Jobs past the limit stay "queued" until a running download frees a slot.
+_slots = asyncio.Semaphore(settings.max_concurrent_downloads)
+
 
 def _filename_from_url(url: str) -> str:
     name = Path(unquote(urlparse(url).path)).name
@@ -112,6 +115,11 @@ async def enqueue_series_pack(
 
 
 async def _run_download(job_id: str) -> None:
+    async with _slots:
+        await _download(job_id)
+
+
+async def _download(job_id: str) -> None:
     job = queue.get(job_id)
     if job is None:
         return
