@@ -28,6 +28,8 @@ STALL_TIMEOUT_SEC = 300
 
 # Jobs past the limit stay "queued" until a running download frees a slot.
 _slots = asyncio.Semaphore(settings.max_concurrent_downloads)
+# Running download tasks by job id, so a job can be cancelled.
+_tasks: dict[str, asyncio.Task] = {}
 
 
 def _filename_from_url(url: str) -> str:
@@ -72,8 +74,23 @@ async def enqueue(title: str, url: str, kind: str = "unknown", year: str | None 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     job = await queue.create(title=title, url=url, target_path=str(target_path))
     log.info("job %s queued: %s -> %s", job.id, title, target_path)
-    asyncio.create_task(_run_download(job.id))
+    _start(job.id)
     return job.id
+
+
+def _start(job_id: str) -> None:
+    task = asyncio.create_task(_run_download(job_id))
+    _tasks[job_id] = task
+    task.add_done_callback(lambda _: _tasks.pop(job_id, None))
+
+
+def cancel(job_id: str) -> bool:
+    """Cancel a queued or downloading job's task. False if it has none."""
+    task = _tasks.get(job_id)
+    if task is None:
+        return False
+    task.cancel()
+    return True
 
 
 def _season_int(season: str | int | None) -> int | None:
@@ -124,7 +141,7 @@ async def enqueue_series_pack(
             skipped += 1
             continue
         log.info("job %s queued: %s -> %s", job.id, ep_title, target)
-        asyncio.create_task(_run_download(job.id))
+        _start(job.id)
         job_ids.append(job.id)
     return job_ids, skipped
 
@@ -133,18 +150,24 @@ async def _run_download(job_id: str) -> None:
     try:
         async with _slots:
             completed = await _download(job_id)
-        # Refresh after releasing the slot so the next queued job can start.
-        if completed:
-            try:
-                await jellyfin.refresh_library()
-            except Exception as exc:  # noqa: BLE001
-                log.warning("job %s: library refresh failed: %s", job_id, exc)
-                # Refresh failure should not mark the download itself as failed.
-                await queue.update(job_id, error=f"library refresh failed: {exc}")
+    except asyncio.CancelledError:
+        # Covers jobs cancelled while waiting for a slot, which never reach _download.
+        log.info("job %s cancelled", job_id)
+        await queue.update(job_id, state="cancelled", speed_bps=0.0)
+        raise
     except Exception:
         # Runs as a fire-and-forget task, so nothing else would ever see this.
         log.exception("job %s: download task crashed", job_id)
         raise
+    # Refresh after releasing the slot so the next queued job can start. Kept
+    # outside the try above so a cancel here can't mark a finished job "cancelled".
+    if completed:
+        try:
+            await jellyfin.refresh_library()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("job %s: library refresh failed: %s", job_id, exc)
+            # Refresh failure should not mark the download itself as failed.
+            await queue.update(job_id, error=f"library refresh failed: {exc}")
 
 
 async def _download(job_id: str) -> bool:
@@ -211,7 +234,8 @@ async def _download(job_id: str) -> bool:
         # Network errors and HTTP status failures are expected; anything else gets a traceback.
         expected = isinstance(exc, RequestException) or str(exc).startswith("HTTP ")
         log.warning("job %s failed: %s", job_id, exc, exc_info=not expected)
-        if tmp.exists():
-            tmp.unlink(missing_ok=True)
         await queue.update(job_id, state="failed", error=str(exc))
         return False
+    finally:
+        # No-op after a successful rename; drops the partial file on failure or cancel.
+        tmp.unlink(missing_ok=True)
