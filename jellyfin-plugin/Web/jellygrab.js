@@ -272,8 +272,25 @@
         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
         <div class="job-detail">${escapeHtml(detail)}</div>
       `;
+      if (job.state === "queued" || job.state === "downloading") {
+        const cancel = document.createElement("button");
+        cancel.className = "secondary job-cancel";
+        cancel.textContent = "Cancel";
+        cancel.addEventListener("click", () => cancelJob(job.id, cancel));
+        row.querySelector(".job-head").appendChild(cancel);
+      }
       $jobs.appendChild(row);
     }
+  }
+
+  async function cancelJob(id, btn) {
+    btn.disabled = true;
+    try {
+      await api(`/api/jobs/${encodeURIComponent(id)}/cancel`, { method: "POST" });
+    } catch (e) {
+      showError(`Cancel failed: ${e.message}`);
+    }
+    refreshJobs();
   }
 
   async function refreshJobs() {
