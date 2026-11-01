@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.15](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.14...v0.2.15) (2026-11-01)
+
+
+### Features
+
+* cancel queued or running download jobs ([#89](https://github.com/itsOmidKarami/jellygrab/issues/89)) ([439858f](https://github.com/itsOmidKarami/jellygrab/commit/439858f81c9317a0013bb1bb894e94792248feea))
+* **plugin:** show queue wait time and flag stalled downloads ([#87](https://github.com/itsOmidKarami/jellygrab/issues/87)) ([a03548a](https://github.com/itsOmidKarami/jellygrab/commit/a03548aeffa5cf6fba71ba3d60ec9a83258bda04))
+* **sidecar:** cap parallel downloads with MAX_CONCURRENT_DOWNLOADS ([#86](https://github.com/itsOmidKarami/jellygrab/issues/86)) ([b047cd2](https://github.com/itsOmidKarami/jellygrab/commit/b047cd256953886d4fa05d5d15f0d729a79cd9a4))
+* **sidecar:** log download lifecycle and failures ([#88](https://github.com/itsOmidKarami/jellygrab/issues/88)) ([99dde31](https://github.com/itsOmidKarami/jellygrab/commit/99dde31289be959b882ce7e33fd57ffaf41662fd))
+
+
+### Bug Fixes
+
+* **deps:** bump fastapi from 0.141.1 to 0.162.0 ([#82](https://github.com/itsOmidKarami/jellygrab/issues/82)) ([4cadb40](https://github.com/itsOmidKarami/jellygrab/commit/4cadb40063cc6df477789e750f2f22796968041e))
+* **deps:** bump pydantic from 2.13.5 to 2.14.1 ([#83](https://github.com/itsOmidKarami/jellygrab/issues/83)) ([7f955d6](https://github.com/itsOmidKarami/jellygrab/commit/7f955d657786e3455119711a0ff6768083e28684))
+
 ## [0.2.14](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.13...v0.2.14) (2026-10-31)
 
 
