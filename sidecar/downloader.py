@@ -1,14 +1,24 @@
 import asyncio
+import logging
 import time
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from config import settings
 from curl_cffi.requests import AsyncSession
+from curl_cffi.requests.exceptions import RequestException
 from jellyfin_client import jellyfin
 from job_queue import queue
 from scrapers.nama import session as nama_session
 from scrapers.nama.scraper import cookie_jar
+
+log = logging.getLogger("jellygrab.downloader")
+log.setLevel(logging.INFO)
+if not log.handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    log.addHandler(_h)
+    log.propagate = False
 
 CHUNK_SIZE = 1024 * 256  # 256 KiB
 PROGRESS_THROTTLE_SEC = 0.5
@@ -61,6 +71,7 @@ async def enqueue(title: str, url: str, kind: str = "unknown", year: str | None 
     target_path = _resolve_target(title, url, kind, year)
     target_path.parent.mkdir(parents=True, exist_ok=True)
     job = await queue.create(title=title, url=url, target_path=str(target_path))
+    log.info("job %s queued: %s -> %s", job.id, title, target_path)
     asyncio.create_task(_run_download(job.id))
     return job.id
 
@@ -112,21 +123,28 @@ async def enqueue_series_pack(
         if job is None:
             skipped += 1
             continue
+        log.info("job %s queued: %s -> %s", job.id, ep_title, target)
         asyncio.create_task(_run_download(job.id))
         job_ids.append(job.id)
     return job_ids, skipped
 
 
 async def _run_download(job_id: str) -> None:
-    async with _slots:
-        completed = await _download(job_id)
-    # Refresh after releasing the slot so the next queued job can start.
-    if completed:
-        try:
-            await jellyfin.refresh_library()
-        except Exception as exc:  # noqa: BLE001
-            # Refresh failure should not mark the download itself as failed.
-            await queue.update(job_id, error=f"library refresh failed: {exc}")
+    try:
+        async with _slots:
+            completed = await _download(job_id)
+        # Refresh after releasing the slot so the next queued job can start.
+        if completed:
+            try:
+                await jellyfin.refresh_library()
+            except Exception as exc:  # noqa: BLE001
+                log.warning("job %s: library refresh failed: %s", job_id, exc)
+                # Refresh failure should not mark the download itself as failed.
+                await queue.update(job_id, error=f"library refresh failed: {exc}")
+    except Exception:
+        # Runs as a fire-and-forget task, so nothing else would ever see this.
+        log.exception("job %s: download task crashed", job_id)
+        raise
 
 
 async def _download(job_id: str) -> bool:
@@ -136,6 +154,7 @@ async def _download(job_id: str) -> bool:
         return False
     target = Path(job.target_path)
     tmp = target.with_suffix(target.suffix + ".part")
+    log.info("job %s started: %s (%s)", job_id, job.title, job.url)
 
     try:
         await queue.update(job_id, state="downloading")
@@ -186,8 +205,12 @@ async def _download(job_id: str) -> bool:
 
         tmp.replace(target)
         await queue.update(job_id, bytes_downloaded=downloaded, state="completed", speed_bps=0.0)
+        log.info("job %s completed: %d bytes -> %s", job_id, downloaded, target)
         return True
     except Exception as exc:  # noqa: BLE001
+        # Network errors and HTTP status failures are expected; anything else gets a traceback.
+        expected = isinstance(exc, RequestException) or str(exc).startswith("HTTP ")
+        log.warning("job %s failed: %s", job_id, exc, exc_info=not expected)
         if tmp.exists():
             tmp.unlink(missing_ok=True)
         await queue.update(job_id, state="failed", error=str(exc))
