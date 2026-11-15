@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.16](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.15...v0.2.16) (2026-11-15)
+
+
+### Bug Fixes
+
+* **deps:** bump curl-cffi from 0.16.3 to 0.17.0 ([#92](https://github.com/itsOmidKarami/jellygrab/issues/92)) ([023a9c8](https://github.com/itsOmidKarami/jellygrab/commit/023a9c80fa5444749a683f195206b360368fc900))
+* **deps:** bump pydantic from 2.14.1 to 2.14.2 ([#93](https://github.com/itsOmidKarami/jellygrab/issues/93)) ([bf66f2b](https://github.com/itsOmidKarami/jellygrab/commit/bf66f2bfbc4b08f208b4f76f44496e82e2318672))
+
 ## [0.2.15](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.14...v0.2.15) (2026-11-01)
 
 
