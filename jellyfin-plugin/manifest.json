@@ -8,6 +8,30 @@
     "category": "General",
     "versions": [
       {
+        "version": "0.2.17.0",
+        "changelog": "Release v0.2.17",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/itsOmidKarami/jellygrab/releases/download/v0.2.17/jellygrab-jellyfin-12.0.0.zip",
+        "checksum": "6022e38dce7850541de964e4a1a31cca",
+        "timestamp": "2026-11-19T20:57:16Z"
+      },
+      {
+        "version": "0.2.17.0",
+        "changelog": "Release v0.2.17",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/itsOmidKarami/jellygrab/releases/download/v0.2.17/jellygrab-jellyfin-10.11.8.zip",
+        "checksum": "889602a8b7faf5aa1b6949d9a0794d8b",
+        "timestamp": "2026-11-19T20:57:16Z"
+      },
+      {
+        "version": "0.2.17.0",
+        "changelog": "Release v0.2.17",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/itsOmidKarami/jellygrab/releases/download/v0.2.17/jellygrab-jellyfin-10.10.7.zip",
+        "checksum": "4231aa00fa5f5cb796bc088099ce197d",
+        "timestamp": "2026-11-19T20:57:16Z"
+      },
+      {
         "version": "0.2.16.0",
         "changelog": "Release v0.2.16",
         "targetAbi": "12.0.0.0",
