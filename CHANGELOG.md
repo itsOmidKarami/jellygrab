@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.17](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.16...v0.2.17) (2026-11-19)
+
+
+### Bug Fixes
+
+* **deps:** bump fastapi from 0.162.0 to 0.162.5 ([#97](https://github.com/itsOmidKarami/jellygrab/issues/97)) ([4ddb25d](https://github.com/itsOmidKarami/jellygrab/commit/4ddb25df24c346c2581825dce4a378fb95bfc75d))
+* **deps:** bump pydantic from 2.14.2 to 2.14.3 ([#96](https://github.com/itsOmidKarami/jellygrab/issues/96)) ([b84891d](https://github.com/itsOmidKarami/jellygrab/commit/b84891dfeb8a85b9c882d0d5408d84c55490d571))
+
 ## [0.2.16](https://github.com/itsOmidKarami/jellygrab/compare/v0.2.15...v0.2.16) (2026-11-15)
 
 
